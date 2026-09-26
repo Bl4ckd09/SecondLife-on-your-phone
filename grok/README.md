@@ -1,6 +1,6 @@
 # Grok path: five Grok Bots
 
-Shortcut B ("Sell with Grok") puts photos in Supabase. Five Grok Bots, one per job, work on the rows. The seller's Mac executes every eBay and Vinted action after its own policy check.
+The "Sell with 2ndLife" Shortcut puts photos in Supabase. Five Grok Bots, one per job, work on the rows. The seller's Mac executes every eBay and Vinted action after its own policy check.
 
 ```
 Shortcut B ─▶ grok_items (new) ──wake──▶ 1 Researcher ─▶ status researched
@@ -36,4 +36,4 @@ A bot without a row in `grok_hooks` still runs on its 5-minute schedule.
 
 ## Test
 
-Share photos to "Sell with Grok". The row appears in `grok_items`, Bot 1 wakes within seconds, and the Mac dashboard (http://127.0.0.1:4545) shows each status change.
+Share photos to "Sell with 2ndLife". The row appears in `grok_items`, Bot 1 wakes within seconds, and the Mac dashboard (http://127.0.0.1:4545) shows each status change.

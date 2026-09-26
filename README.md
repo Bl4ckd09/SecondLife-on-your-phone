@@ -1,33 +1,60 @@
-# SecondLife for eBay
+# SecondLife on your phone
 
-Photos of a secondhand item go in. A live eBay listing at a competitive price comes out, and an agent handles the buyer questions and Best Offers after that.
+Take photos of a secondhand item and share them from your iPhone. SecondLife identifies the item, prices it from live ebay.co.uk listings, publishes it on eBay, saves a Vinted draft, and answers buyers within your rules.
 
-This is the eBay sibling of [SecondLife](https://github.com/Bl4ckd09/SecondLife), which stays Vinted only. The idea is the same. The difference is autonomy. Vinted has no seller API, so SecondLife stops at drafts. eBay has official APIs for search, listing, messages and offers, so here the agents act on their own inside your policy.
+This is a fresh build next to [SecondLife](https://github.com/Bl4ckd09/SecondLife), which stays Vinted only. eBay has official seller APIs, so here the agents publish and negotiate on their own. Vinted has no seller API and its terms forbid automation, so Vinted gets drafts and suggested replies only.
 
 ## How it works
 
-```
-iPhone Share ▸ "Sell on eBay"
-      │  photos + size, condition, flaws
-      ▼
-Mac worker (intake :4747) ──────────── holds the eBay keys, enforces policy.json in code
-      │
-      ▼
-ebay_item_researcher (Claude Managed Agent, cloud)
-      │  ebay_research tool: image search, active comps, category, aspects, conditions
-      │  web_search (Tavily): manufacturer pages, RRP
-      ▼  dossier: identity, eBay category + aspects, price range + fast-sale price
-ebay_seller_agent (listing mode)
-      │  ebay_seller publish_listing: photos, inventory item, offer with Best Offer lines
-      ▼
-LIVE on ebay.co.uk ──▶ push to your phone (ntfy)
+One Shortcut, five Grok Bots, and one Mac that holds every login and enforces the rules.
 
-every 10 min: ebay_seller_agent (inbox mode)
-      get_inbox ▸ reply to questions ▸ accept / counter / decline Best Offers
-      anything outside policy ▸ request_user_input ▸ push to your phone
+```
+ iPhone  Share ▸ "Sell with 2ndLife"
+    │  photos + size, condition, flaws (straight to Supabase, no Mac needed)
+    ▼
+ ┌──────────────────────────────────────┐
+ │ Supabase                             │   grok_items · grok_inbox
+ │ item rows + private photo bucket     │   grok_vinted_messages
+ └───┬──────────────────────────▲───────┘
+     │ webhook on every new row │ bots write results
+     ▼                          │
+ ┌──────────────────────────────┴───────┐
+ │ 5 Grok Bots (Cursor)                 │
+ │ 1 Researcher     identity, RRP       │ ◀── Tavily search
+ │ 2 eBay Poster    ebay.co.uk comps,   │
+ │                  price, listing      │
+ │ 3 Vinted Poster  Vinted price,       │
+ │                  listing             │
+ │ 4 eBay Buyer     answers, offers     │
+ │ 5 Vinted Reply   suggested replies   │
+ └──────────────────────────────────────┘
+     │ ready rows, checked every 1 min
+     ▼
+ ┌──────────────────────────────────────┐
+ │ Mac worker                           │
+ │ holds the eBay token, Vinted login   │
+ │ and Gmail; checks policy.json first  │
+ └──┬───────────┬───────────┬───────────┘
+    ▼           ▼           ▼
+ eBay API    Chrome      Gmail (read-only)
+ publish,    Vinted      Vinted buyer emails
+ replies,    DRAFT,      go back to Bot 5
+ offers      you press
+             Upload
+    │
+    ▼
+ push to your phone (ntfy) · dashboard http://127.0.0.1:4545
 ```
 
-Both agents run in Anthropic's cloud. Every eBay call runs in the worker on your Mac as a custom tool. The agent asks, the worker checks the request against `policy.json`, calls eBay, and returns the result. eBay keys never leave the Mac.
+| Step | Who does it | What the Mac does |
+|---|---|---|
+| Identify the item, find the RRP | Bot 1 + Tavily | nothing |
+| Price from ebay.co.uk listings, write the eBay listing | Bot 2 + Tavily | publishes through the eBay API |
+| Price and write the Vinted listing | Bot 3 + Tavily | saves a Vinted draft in Chrome |
+| Answer eBay questions and Best Offers | Bot 4 | sends the reply or offer through the eBay API |
+| Suggest replies to Vinted buyers | Bot 5 | reads the Vinted email, pushes the suggestion to your phone |
+
+The bots never hold a key. They write to Supabase, the Mac checks `policy.json`, and only then calls eBay or opens Chrome.
 
 ## What the agents may do
 
