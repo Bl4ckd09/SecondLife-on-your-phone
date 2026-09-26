@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Resumable setup and inspection for the eBay researcher and seller agents.
+# Resumable setup and inspection for the researcher, eBay seller, and Vinted lister agents.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -60,7 +60,7 @@ setup() {
   fi
   echo "memory store $MEMSTORE_ID (policy.md seeded)"
   local role file
-  for role in RESEARCHER SELLER; do
+  for role in RESEARCHER SELLER VINTED; do
     file=agent-$(echo "$role" | tr A-Z a-z).json
     if [ -z "$(eval echo "\${${role}_ID:-}")" ]; then
       python3 -c "import json; a=json.load(open('$file')); a['model']='$MODEL'; print(json.dumps(a))" > runs/tmp/body.json
@@ -70,7 +70,7 @@ setup() {
     fi
     eval "echo \"agent $file \${${role}_ID} (v\${${role}_VERSION}, $MODEL) $CONSOLE/agents/\${${role}_ID}\""
   done
-  echo "Research, listing, and inbox tools require: cd worker && npx tsx worker.ts watch"
+  echo "Research, eBay listing, Vinted drafting, and inbox tools require: cd worker && npx tsx worker.ts watch"
 }
 
 show_status() {

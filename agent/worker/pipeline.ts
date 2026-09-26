@@ -5,8 +5,9 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { z } from "zod/v4";
-import { RUNS, api, deleteFile, env, fetchOutputs, fillTemplate, notify, sleep, startSession, uploadFile } from "./lib.ts";
+import { MEM_BETA, RUNS, api, deleteFile, env, fetchOutputs, fillTemplate, notify, sleep, startSession, uploadFile } from "./lib.ts";
 import { delivered, runResearchTool, runSellerTool } from "./tools.ts";
+import { blockedReason, humanPause, openBrowser, type Hands } from "./browser.ts";
 
 const INTAKE = join(RUNS, "intake");
 const SEEN_FILE = join(RUNS, "ebay-seen.json");
@@ -17,6 +18,20 @@ const POLL_MS = 15_000;
 const INTAKE_ITERATIONS = 1;
 const INBOX_MS = Math.max(1, Number(process.env.EBAY_INBOX_MINUTES ?? env.EBAY_INBOX_MINUTES ?? 10)) * 60_000;
 const Status = z.enum(["new", "researching", "listing", "live", "needs_you", "failed"]);
+const PriceHint = z.object({
+  bargain: z.number().nullable(),
+  optimal: z.number().nullable(),
+  premium: z.number().nullable(),
+});
+const VintedState = z.object({
+  status: z.enum(["listing", "drafting", "drafted", "failed", "skipped"]),
+  session: z.string().optional(),
+  listing: z.record(z.string(), z.unknown()).optional(),
+  skippedFields: z.array(z.string()).optional(),
+  priceHint: PriceHint.optional(),
+  error: z.string().optional(),
+  attempts: z.number().optional(),
+}).loose();
 const ItemState = z.object({
   item: z.string(),
   status: Status,
@@ -32,9 +47,12 @@ const ItemState = z.object({
   url: z.string().optional(),
   error: z.string().optional(),
   attempts: z.number().optional(),
+  vinted: VintedState.optional(),
 }).loose();
 
 type ItemState = z.infer<typeof ItemState>;
+type PriceHint = z.infer<typeof PriceHint>;
+type DraftResult = { skipped: string[]; hint: PriceHint | null };
 type ToolHandler = (input: unknown) => Promise<unknown>;
 type Settlement = { status: string; verdict: string };
 
@@ -126,7 +144,7 @@ async function handleIntake(req: IncomingMessage, res: ServerResponse) {
     fileIds: [],
   });
   console.log(`${item}: received ${names.length} photos`);
-  reply(res, 202, { item, message: `Got ${names.length} photos. ${item} will be researched and published on eBay.` });
+  reply(res, 202, { item, message: `Got ${names.length} photos. eBay listing and Vinted draft on the way.` });
 }
 
 async function listEvents(session: string): Promise<Record<string, unknown>[]> {
@@ -140,7 +158,11 @@ async function listEvents(session: string): Promise<Record<string, unknown>[]> {
     events.push(...array(page.data).map(record));
     const next = page.next_page ?? record(page.pagination).next;
     if (typeof next === "string" && next) {
-      path = next.startsWith("http") ? new URL(next).pathname + new URL(next).search : next;
+      path = next.startsWith("http")
+        ? new URL(next).pathname + new URL(next).search
+        : next.startsWith("/")
+          ? next
+          : `${base}?limit=100&page=${encodeURIComponent(next)}`;
     } else if (page.has_more === true && typeof page.last_id === "string") {
       path = `${base}?limit=100&after_id=${encodeURIComponent(page.last_id)}`;
     } else {
@@ -206,9 +228,141 @@ async function notifyRequests(session: string, item: string) {
   for (const question of requestQuestions(session)) await notify(`eBay needs you: ${item}`, question);
 }
 
+const text = (value: unknown, max = 5000) => String(value ?? "").slice(0, max);
+
+// Fill Vinted's web "Sell an item" form and save it as a draft. Title, description, photos and price
+// are required. The pickers (category, brand, size, condition, colours, parcel size) are best effort:
+// their layout changes often, so misses are reported instead of failing the draft.
+// Picker instructions follow what the live form showed on 2026-09-24: searchable category and brand
+// lists, sizes labelled like "M / UK 12-14", and a "Proof of authenticity" dialog after some brands.
+async function fillVintedDraft(h: Hands, state: ItemState): Promise<DraftResult> {
+  const listing = state.vinted?.listing ?? {};
+  await h.page.goto("https://www.vinted.co.uk/items/new");
+  await humanPause();
+  const reason = await blockedReason(h);
+  if (reason) throw new Error(reason);
+
+  await h.page.locator('input[type="file"]').setInputFiles(state.photos.map((name) => join(INTAKE, state.item, name)));
+  await sleep(4000 + 1500 * state.photos.length);
+
+  const fill = async (what: string, value: string) => {
+    const { data } = await h.stagehand.observe(`find the ${what}`);
+    if (!data.length) throw new Error(`no ${what} on the form`);
+    await h.page.locator(data[0].selector).fill(value);
+    await humanPause();
+  };
+  await fill("item title text input", text(listing.title, 100));
+  await fill("item description textarea", text(listing.description));
+
+  const skipped: string[] = [];
+  const pick = async (label: string, value: unknown, instruction: string) => {
+    if (!value) { skipped.push(label); return; }
+    try { await h.stagehand.act(instruction); await humanPause(); } catch { skipped.push(label); }
+  };
+  const categoryPath = text(listing.category_path, 160);
+  await pick("category", categoryPath, `Open the Category picker, type "${categoryPath.split(">").pop()!.trim()}" in its search box, and select the result whose path best matches "${categoryPath}".`);
+  await pick("brand", listing.brand, `Open the Brand picker, search "${text(listing.brand, 60)}", and select that exact brand.`);
+  await h.stagehand.act('If a dialog titled "Proof of authenticity" is open, click its Close button. Otherwise do nothing.').catch(() => undefined);
+  await pick("size", listing.size, `Open the Size picker and select the option for size "${text(listing.size, 30)}". Options read like "M / UK 12-14", so match on the size before the slash.`);
+  await pick("condition", listing.condition, `Open the Condition picker and select "${text(listing.condition, 40)}".`);
+  const colours = Array.isArray(listing.colours) ? listing.colours.slice(0, 2).map((colour) => text(colour, 30)) : [];
+  await pick("colours", colours.length, `Open the Colours picker, tick ${colours.map((colour) => `"${colour}"`).join(" and ")}, then close the picker.`);
+  await pick("parcel size", listing.parcel_size, `In the Shipping section, select the "${text(listing.parcel_size, 20)}" parcel size.`);
+  await fill("price input", String(listing.price_gbp ?? ""));
+
+  let hint: PriceHint | null = null;
+  try {
+    const { data } = await h.stagehand.extract(
+      "Read Vinted's price recommendation for this listing: the Bargain, Optimal and Premium amounts in GBP (null for any not shown).",
+      PriceHint,
+    );
+    if (data.optimal !== null || data.bargain !== null) hint = data;
+  } catch { /* no suggestion shown */ }
+
+  await h.stagehand.act('Click the "Save draft" button. Do not click Upload or Publish.');
+  await humanPause();
+  if (/items\/new/.test(await h.page.url())) throw new Error("the form did not save; check it in the worker's Chrome window");
+  return { skipped, hint };
+}
+
+// Keep Vinted's suggestion next to the dossier, so later sessions can use it for negotiation and repricing.
+async function saveHint(item: string, hint: PriceHint, listed: unknown) {
+  await api("POST", `/memory_stores/${env.MEMSTORE_ID}/memories`, {
+    path: `/items/${item}/vinted-price-suggestion.json`,
+    content: JSON.stringify({ source: "Vinted sell form price recommendation", recorded_at: new Date().toISOString(), listed_gbp: listed, ...hint }, null, 2),
+  }, MEM_BETA).catch(() => undefined);
+}
+
+let hands: Hands | null = null;
+
+async function stepVinted(item: string) {
+  const state = load(item);
+  if (!state.vinted) {
+    if (!state.listingSession) return;
+    state.vinted = { status: !env.VINTED_ID || env.VINTED_DISABLED === "1" ? "skipped" : "listing" };
+    save(state);
+    if (state.vinted.status === "skipped") return;
+  }
+
+  const vinted = state.vinted;
+  if (vinted.status === "listing") {
+    if (!vinted.session) {
+      if (!env.VINTED_VERSION) throw new Error("VINTED_VERSION is missing");
+      vinted.session = await startSession({
+        kind: "vinted",
+        item: state.item,
+        agentId: env.VINTED_ID,
+        agentVersion: env.VINTED_VERSION,
+        task: fillTemplate("first_prompt-vinted.txt", { ITEM: state.item }),
+        rubricFile: "outcome-vinted.md",
+        maxIterations: 1,
+      });
+      save(state);
+      console.log(`${state.item}: Vinted listing ${vinted.session}`);
+      return;
+    }
+    const result = await settled(vinted.session, async () => ({ error: "policy", detail: "Vinted listing sessions have no custom tools" }));
+    if (!result) return;
+    await fetchOutputs(vinted.session);
+    const file = join(RUNS, vinted.session, "vinted.json");
+    const listing = existsSync(file) ? record(JSON.parse(readFileSync(file, "utf8"))) : {};
+    if (!listing.title || !listing.description) throw new Error(`no Vinted title or description in vinted.json (${result.verdict})`);
+    vinted.listing = listing;
+    vinted.status = "drafting";
+    save(state);
+    return;
+  }
+
+  if (vinted.status === "drafting") {
+    hands ??= await openBrowser();
+    const { skipped, hint } = await fillVintedDraft(hands, state);
+    vinted.skippedFields = skipped;
+    vinted.priceHint = hint ?? undefined;
+    vinted.status = "drafted";
+    save(state);
+    if (hint) await saveHint(state.item, hint, vinted.listing?.price_gbp);
+
+    const price = Number(vinted.listing?.price_gbp);
+    const outside = hint && ((hint.premium !== null && price > hint.premium) || (hint.bargain !== null && price < hint.bargain));
+    const priceNote = hint ? `Vinted suggests £${hint.bargain ?? "?"}-£${hint.premium ?? "?"} (optimal £${hint.optimal ?? "?"})${outside ? ", so review the price" : ""}.` : "";
+    const check = skipped.length ? `Check: ${skipped.join(", ")}.` : "";
+    console.log(`${state.item}: Vinted draft saved at £${price}. ${priceNote} ${check}`.trim());
+    await notify(`Vinted draft ready: ${text(vinted.listing?.title, 80)} £${price}`, `${priceNote} ${check} Open Vinted ▸ Drafts.`.trim());
+  }
+}
+
 async function clearCloudPhotos(state: ItemState) {
   for (const id of state.fileIds) await deleteFile(id);
   state.fileIds = [];
+}
+
+function clearLocalPhotosIfDone(state: ItemState) {
+  const ebayDone = ["live", "needs_you", "failed"].includes(state.status);
+  const vintedDone = state.vinted
+    ? ["drafted", "failed", "skipped"].includes(state.vinted.status)
+    : !env.VINTED_ID;
+  if (!ebayDone || !vintedDone) return;
+  for (const name of state.photos) rmSync(join(INTAKE, state.item, name), { force: true });
 }
 
 async function step(item: string) {
@@ -267,7 +421,6 @@ async function step(item: string) {
       await clearCloudPhotos(current);
       if (current.listingId && current.url && current.listedGbp !== undefined) {
         current.status = "live";
-        for (const name of current.photos) rmSync(join(INTAKE, id, name), { force: true });
         console.log(`${id}: live ${current.url}`);
         await notify("Live on eBay", `${current.title ?? id} £${current.listedGbp} ${current.url}`);
       } else {
@@ -352,29 +505,62 @@ async function loop() {
   for (;;) {
     const items = existsSync(INTAKE) ? readdirSync(INTAKE).filter((item) => existsSync(stateFile(item))).sort() : [];
     for (const item of items) {
-      const state = load(item);
-      if (["live", "needs_you", "failed"].includes(state.status) || state.status === process.env.HOLD_AT) continue;
-      try {
-        await step(item);
-        const current = load(item);
-        if (current.attempts) {
-          current.attempts = 0;
-          current.error = undefined;
+      let state = load(item);
+      if (!["live", "needs_you", "failed"].includes(state.status) && state.status !== process.env.HOLD_AT) {
+        try {
+          await step(item);
+          const current = load(item);
+          if (current.attempts) {
+            current.attempts = 0;
+            current.error = undefined;
+            save(current);
+          }
+        } catch (error) {
+          const current = load(item);
+          current.error = String(error instanceof Error ? error.message : error).slice(0, 500);
+          current.attempts = (current.attempts ?? 0) + 1;
+          if (current.attempts >= 3) {
+            current.status = "failed";
+            console.error(`${item}: ${current.error}`);
+            await notify("SecondLife eBay item failed", `${item}: ${current.error}`);
+          } else {
+            console.warn(`${item}: try ${current.attempts}/3 failed: ${current.error}`);
+          }
           save(current);
         }
-      } catch (error) {
-        const current = load(item);
-        current.error = String(error instanceof Error ? error.message : error).slice(0, 500);
-        current.attempts = (current.attempts ?? 0) + 1;
-        if (current.attempts >= 3) {
-          current.status = "failed";
-          console.error(`${item}: ${current.error}`);
-          await notify("SecondLife eBay item failed", `${item}: ${current.error}`);
-        } else {
-          console.warn(`${item}: try ${current.attempts}/3 failed: ${current.error}`);
-        }
-        save(current);
       }
+
+      state = load(item);
+      const vintedActive = state.vinted
+        ? ["listing", "drafting"].includes(state.vinted.status)
+        : Boolean(state.listingSession);
+      if (vintedActive && !(state.vinted?.status === "drafting" && process.env.HOLD_AT === "drafting")) {
+        try {
+          await stepVinted(item);
+          const current = load(item);
+          if (current.vinted?.attempts) {
+            current.vinted.attempts = 0;
+            current.vinted.error = undefined;
+            save(current);
+          }
+        } catch (error) {
+          const current = load(item);
+          if (!current.vinted) current.vinted = { status: "listing" };
+          const vinted = current.vinted;
+          vinted.error = String(error instanceof Error ? error.message : error).slice(0, 500);
+          vinted.attempts = (vinted.attempts ?? 0) + 1;
+          if (vinted.status === "drafting") hands = null;
+          if (vinted.attempts >= 3) {
+            vinted.status = "failed";
+            console.error(`${item}: Vinted ${vinted.error}`);
+            await notify("SecondLife Vinted draft failed", `${item}: ${vinted.error}`);
+          } else {
+            console.warn(`${item}: Vinted try ${vinted.attempts}/3 failed: ${vinted.error}`);
+          }
+          save(current);
+        }
+      }
+      clearLocalPhotosIfDone(load(item));
     }
     try { await pollInbox(); } catch (error) {
       console.error(`inbox: ${error instanceof Error ? error.message : error}`);

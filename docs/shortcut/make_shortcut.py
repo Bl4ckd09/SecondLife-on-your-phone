@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Build the "Sell on eBay" iPhone Shortcut as an unsigned plist.
+"""Build the "Sell with SecondLife" iPhone Shortcut as an unsigned plist.
 
     python3 make_shortcut.py && shortcuts sign --mode anyone \
-        --input Sell-on-eBay.unsigned.shortcut --output Sell-on-eBay.shortcut
+        --input Sell-with-SecondLife.unsigned.shortcut --output Sell-with-SecondLife.shortcut
 
 The Mac address and the intake secret are import questions: Shortcuts asks for them
 when the file is installed, so the file itself holds no secret.
@@ -11,7 +11,7 @@ import plistlib
 import uuid
 from pathlib import Path
 
-OUT = Path(__file__).with_name("Sell-on-eBay.unsigned.shortcut")
+OUT = Path(__file__).with_name("Sell-with-SecondLife.unsigned.shortcut")
 OBJ = "￼"  # Shortcuts' placeholder character for an inline variable
 
 
@@ -94,12 +94,12 @@ actions = [
            ])),
     action("getvalueforkey", UUID=msg_id, WFGetDictionaryValueType="Value", WFDictionaryKey="message",
            WFInput=attachment(output(post_id, "Intake reply"))),
-    action("notification", WFNotificationActionTitle="Sell on eBay",
+    action("notification", WFNotificationActionTitle="Sell with SecondLife",
            WFNotificationActionBody=text(OBJ, [output(msg_id, "Dictionary Value")])),
 ]
 
 workflow = {
-    "WFWorkflowName": "Sell on eBay",
+    "WFWorkflowName": "Sell with SecondLife",
     "WFWorkflowClientVersion": "2605.0.5",
     "WFWorkflowMinimumClientVersion": 900,
     "WFWorkflowMinimumClientVersionString": "900",
