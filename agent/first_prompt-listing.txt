@@ -1,1 +1,1 @@
-Listing mode. Item {{ITEM}} is researched. Publish it on eBay UK with ebay_seller publish_listing, following your instructions and policy.md.
+Item {{ITEM}} is researched. Price it from live eBay comps and publish it on eBay UK, following your instructions and policy.md.

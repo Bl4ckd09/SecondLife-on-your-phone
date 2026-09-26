@@ -1,0 +1,5 @@
+A Vinted email notification says buyer {{BUYER}} wrote about the listing "{{LISTING}}":
+
+{{MESSAGE}}
+
+Suggest a reply as described in your instructions.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Resumable setup and inspection for the researcher, eBay seller, and Vinted lister agents.
+# Resumable setup and inspection for the five sales agents.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -59,17 +59,28 @@ setup() {
     mem_api POST "/memory_stores/$MEMSTORE_ID/memories" runs/tmp/body.json
   fi
   echo "memory store $MEMSTORE_ID (policy.md seeded)"
-  local role file
-  for role in RESEARCHER SELLER VINTED; do
-    file=agent-$(echo "$role" | tr A-Z a-z).json
-    if [ -z "$(eval echo "\${${role}_ID:-}")" ]; then
+  local role file id_key version_key id version
+  while read -r role file; do
+    id_key=${role}_ID
+    version_key=${role}_VERSION
+    id=${!id_key:-}
+    version=${!version_key:-}
+    if [ -z "$id" ]; then
       python3 -c "import json; a=json.load(open('$file')); a['model']='$MODEL'; print(json.dumps(a))" > runs/tmp/body.json
       api "$CMA_BETA" POST /agents runs/tmp/body.json
-      save_id "${role}_ID" "$(jget "d['id']")"
-      save_id "${role}_VERSION" "$(jget "d['version']")"
+      id=$(jget "d['id']")
+      version=$(jget "d['version']")
+      save_id "$id_key" "$id"
+      save_id "$version_key" "$version"
     fi
-    eval "echo \"agent $file \${${role}_ID} (v\${${role}_VERSION}, $MODEL) $CONSOLE/agents/\${${role}_ID}\""
-  done
+    echo "agent $file $id (v$version, $MODEL) $CONSOLE/agents/$id"
+  done <<'ROLES'
+RESEARCHER agent-researcher.json
+EBAY_POSTER agent-ebay-poster.json
+VINTED agent-vinted.json
+EBAY_BUYER agent-ebay-buyer.json
+VINTED_REPLY agent-vinted-reply.json
+ROLES
   echo "Research, eBay listing, Vinted drafting, and inbox tools require: cd worker && npx tsx worker.ts watch"
 }
 

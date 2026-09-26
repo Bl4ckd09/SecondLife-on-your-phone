@@ -1,1 +1,1 @@
-Item {{ITEM}} is researched. Write its Vinted listing as described in your instructions.
+Item {{ITEM}} is researched. Price it for Vinted and write its Vinted listing as described in your instructions.

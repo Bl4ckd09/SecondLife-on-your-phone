@@ -53,7 +53,9 @@ const ItemState = z.object({
 type ItemState = z.infer<typeof ItemState>;
 type PriceHint = z.infer<typeof PriceHint>;
 type DraftResult = { skipped: string[]; hint: PriceHint | null };
-type ToolHandler = (input: unknown) => Promise<unknown>;
+export type ToolScope =
+  | { kind: "research" | "listing" | "vinted"; item: string }
+  | { kind: "inbox" | "none" };
 type Settlement = { status: string; verdict: string };
 
 const stateFile = (item: string) => join(INTAKE, item, "state.json");
@@ -177,12 +179,41 @@ function pendingTools(events: Record<string, unknown>[]): Record<string, unknown
   return events.filter((event) => event.type === "agent.custom_tool_use" && !answered.has(String(event.id ?? "")));
 }
 
-export async function serveTools(session: string, handler: ToolHandler): Promise<number> {
+export async function dispatchTool(scope: ToolScope, name: unknown, input: unknown): Promise<unknown> {
+  const tool = String(name ?? "");
+  if (tool !== "ebay_research" && tool !== "ebay_seller") return { error: "not_found" };
+
+  if (tool === "ebay_research") {
+    if (scope.kind === "research" || scope.kind === "listing" || scope.kind === "vinted") {
+      return runResearchTool(scope.item, input);
+    }
+    const detail = scope.kind === "inbox"
+      ? "inbox sessions may only use ebay_seller"
+      : "this session may not use custom tools";
+    return { error: "policy", detail };
+  }
+
+  if (scope.kind === "listing") {
+    const call = record(input);
+    if (call.action === "publish_listing" && call.item_id === scope.item) return runSellerTool(input);
+    return { error: "policy", detail: `listing sessions may only publish item ${scope.item}` };
+  }
+  if (scope.kind === "inbox") {
+    if (record(input).action !== "publish_listing") return runSellerTool(input);
+    return { error: "policy", detail: "inbox sessions may not publish listings" };
+  }
+  const detail = scope.kind === "none"
+    ? "this session may not use custom tools"
+    : `${scope.kind} sessions may only use ebay_research`;
+  return { error: "policy", detail };
+}
+
+export async function serveTools(session: string, scope: ToolScope): Promise<number> {
   const pending = pendingTools(await listEvents(session));
   for (const event of pending) {
     const id = String(event.id ?? "");
     if (!id) continue;
-    const result = await handler(event.input);
+    const result = await dispatchTool(scope, event.name, event.input);
     await api("POST", `/sessions/${session}/events`, {
       events: [{
         type: "user.custom_tool_result",
@@ -194,8 +225,8 @@ export async function serveTools(session: string, handler: ToolHandler): Promise
   return pending.length;
 }
 
-async function settled(session: string, handler: ToolHandler): Promise<Settlement | null> {
-  await serveTools(session, handler);
+async function settled(session: string, scope: ToolScope): Promise<Settlement | null> {
+  await serveTools(session, scope);
   const details = record(await api("GET", `/sessions/${session}`));
   const evaluations = array(details.outcome_evaluations).map(record);
   const verdict = String(evaluations.at(-1)?.result ?? "");
@@ -321,7 +352,7 @@ async function stepVinted(item: string) {
       console.log(`${state.item}: Vinted listing ${vinted.session}`);
       return;
     }
-    const result = await settled(vinted.session, async () => ({ error: "policy", detail: "Vinted listing sessions have no custom tools" }));
+    const result = await settled(vinted.session, { kind: "vinted", item });
     if (!result) return;
     await fetchOutputs(vinted.session);
     const file = join(RUNS, vinted.session, "vinted.json");
@@ -391,14 +422,14 @@ async function step(item: string) {
     }
     case "researching": {
       if (!state.researchSession) throw new Error("research session is missing");
-      const result = await settled(state.researchSession, (input) => runResearchTool(id, input));
+      const result = await settled(state.researchSession, { kind: "research", item: id });
       if (!result) return;
       accepted(result, "research");
       state.listingSession = await startSession({
         kind: "sell",
         item: id,
-        agentId: env.SELLER_ID,
-        agentVersion: env.SELLER_VERSION,
+        agentId: env.EBAY_POSTER_ID || env.SELLER_ID,
+        agentVersion: env.EBAY_POSTER_VERSION || env.SELLER_VERSION,
         task: fillTemplate("first_prompt-listing.txt", { ITEM: id }),
         rubricFile: "outcome-listing.md",
         maxIterations: INTAKE_ITERATIONS,
@@ -410,11 +441,7 @@ async function step(item: string) {
     }
     case "listing": {
       if (!state.listingSession) throw new Error("listing session is missing");
-      const result = await settled(state.listingSession, async (input) => {
-        const call = record(input);
-        if (call.action === "publish_listing" && call.item_id === id) return runSellerTool(input);
-        return { error: "policy", detail: `listing sessions may only publish item ${id}` };
-      });
+      const result = await settled(state.listingSession, { kind: "listing", item: id });
       if (!result) return;
       await fetchOutputs(state.listingSession);
       const current = load(id);
@@ -449,10 +476,6 @@ async function finishInbox(session: string) {
   await notifyRequests(session, "inbox");
 }
 
-async function runInboxTool(input: unknown): Promise<unknown> {
-  if (record(input).action === "publish_listing") return { error: "policy", detail: "inbox sessions may not publish listings" };
-  return runSellerTool(input);
-}
 
 async function startInboxSession(): Promise<string | null> {
   const preview = record(await runSellerTool({ action: "get_inbox" }));
@@ -461,8 +484,8 @@ async function startInboxSession(): Promise<string | null> {
   const session = await startSession({
     kind: "inbox",
     item: "ebay",
-    agentId: env.SELLER_ID,
-    agentVersion: env.SELLER_VERSION,
+    agentId: env.EBAY_BUYER_ID || env.SELLER_ID,
+    agentVersion: env.EBAY_BUYER_VERSION || env.SELLER_VERSION,
     task: fillTemplate("first_prompt-inbox.txt", {}),
     rubricFile: "outcome-reply.md",
     maxIterations: 1,
@@ -476,7 +499,7 @@ let nextInboxAt = 0;
 
 async function pollInbox() {
   if (inboxSession) {
-    const result = await settled(inboxSession, runInboxTool);
+    const result = await settled(inboxSession, { kind: "inbox" });
     if (!result) return;
     await finishInbox(inboxSession);
     inboxSession = null;
@@ -570,6 +593,44 @@ async function loop() {
   }
 }
 
+export async function suggestVintedReply({ buyer, listing, message }: {
+  buyer: string;
+  listing: string;
+  message: string;
+}): Promise<string> {
+  if (!env.VINTED_REPLY_ID || !env.VINTED_REPLY_VERSION) {
+    throw new Error("VINTED_REPLY_ID and VINTED_REPLY_VERSION are missing");
+  }
+  const session = await startSession({
+    kind: "vinted-reply",
+    item: listing,
+    agentId: env.VINTED_REPLY_ID,
+    agentVersion: env.VINTED_REPLY_VERSION,
+    task: fillTemplate("first_prompt-vinted-reply.txt", { BUYER: buyer, LISTING: listing, MESSAGE: message }),
+    rubricFile: "outcome-vinted-reply.md",
+    maxIterations: 1,
+  });
+  const deadline = Date.now() + 10 * 60_000;
+  for (;;) {
+    if (Date.now() >= deadline) throw new Error(`Vinted reply session ${session} did not settle within 10 minutes`);
+    const result = await settled(session, { kind: "none" });
+    if (result) {
+      accepted(result, "Vinted reply");
+      break;
+    }
+    await sleep(Math.min(5000, deadline - Date.now()));
+  }
+  await fetchOutputs(session);
+  const file = join(RUNS, session, "suggestion.json");
+  if (!existsSync(file)) throw new Error(`Vinted reply session ${session} produced no suggestion.json`);
+  const suggestion = record(JSON.parse(readFileSync(file, "utf8")));
+  const suggestedReply = text(suggestion.suggested_reply).trim();
+  if (!suggestedReply) throw new Error(`Vinted reply session ${session} produced no suggested_reply`);
+  const shortMessage = text(message.trim().replace(/\s+/g, " "), 200);
+  await notify(`Vinted reply for ${text(buyer, 80)}`, `${shortMessage}\n\nSuggested: ${suggestedReply}`);
+  return suggestedReply;
+}
+
 export async function runInboxOnce() {
   const session = await startInboxSession();
   if (!session) {
@@ -577,7 +638,7 @@ export async function runInboxOnce() {
     return;
   }
   for (;;) {
-    const result = await settled(session, runInboxTool);
+    const result = await settled(session, { kind: "inbox" });
     if (result) break;
     await sleep(5000);
   }

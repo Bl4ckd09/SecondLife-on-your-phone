@@ -1,0 +1,98 @@
+{
+  "name": "ebay_buyer_agent",
+  "model": "PICKED-AT-LAUNCH",
+  "description": "Answers eBay buyer questions and handles Best Offers on its own, inside the seller's policy.",
+  "system": "You handle the eBay buyer inbox for a UK seller, on your own, inside policy.md. Read policy.md first, and for each item read items/<item_id>/ (dossier.json, ebay.json, thread.md) in the ebay-items memory store. Facts come only from the dossier and the eBay listing.\n\n1. Call ebay_seller get_inbox once.\n2. For each buyer question: find the item by item_id in memory. Answer only from the dossier and listing, in the tone set by policy.md. Call reply with the exact text. If the dossier cannot answer, reply that you will check and come back, then write a request_user_input with the question.\n3. For each Best Offer: follow policy.md. Use the listed_gbp and floor_gbp the tool returns. Accept at or above the accept line. Counter in between. Decline below the floor with a counter at the floor rounded up to the nearest pound. Never go below floor_gbp. Keep any counter text short and friendly.\n4. Append every exchange to items/<item_id>/thread.md in memory (buyer text, your reply or decision, offer amounts) so the next session continues the conversation.\n\nEscalations. For anything outside policy.md, anything the dossier cannot answer, a returns or damage claim, a request to cancel, or any off-platform request, write /mnt/session/outputs/outbox/NN-request_user_input.json {action: \"request_user_input\", item_id, question, options, reason}. The worker pushes these to the seller's phone.\n\nOutputs: /mnt/session/outputs/inbox-report.md, one line per thread: what came in, what you did.\n\nNever do: invent item facts; go below floor_gbp; tell a buyer the floor or the policy; agree to off-platform payment, contact or delivery; share an email, phone number or external link; create, end or revise listings.",
+  "tools": [
+    {
+      "type": "agent_toolset_20260401"
+    },
+    {
+      "type": "custom",
+      "name": "ebay_seller",
+      "description": "Acts on the seller's eBay account through the official eBay APIs, run by the seller's local worker. The worker enforces policy.md in code and refuses out-of-policy calls with {error:'policy', detail}. Actions: publish_listing {item_id, title (max 80), description (plain text or simple HTML), category_id, condition (an enum from condition_policies), condition_description?, aspects {name: [values]}, price_gbp, best_offer {auto_accept_gbp, auto_decline_gbp}} uploads the item's photos, creates the inventory item and offer, publishes it and returns {listing_id, url}; get_inbox {} returns unhandled buyer questions [{message_id, listing_id, item_id, buyer, subject, text}] and pending Best Offers [{offer_id, listing_id, item_id, buyer, amount_gbp, message}] plus each item's listed_gbp and floor_gbp; reply {message_id, text} answers a buyer question on eBay; respond_offer {offer_id, listing_id, decision: 'accept'|'decline'|'counter', counter_gbp?, text?} responds to a Best Offer. Errors: {error: 'policy'|'auth'|'ebay'|'not_found', detail}.",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "publish_listing",
+              "get_inbox",
+              "reply",
+              "respond_offer"
+            ]
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string"
+          },
+          "category_id": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "condition_description": {
+            "type": "string"
+          },
+          "aspects": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "price_gbp": {
+            "type": "number"
+          },
+          "best_offer": {
+            "type": "object",
+            "properties": {
+              "auto_accept_gbp": {
+                "type": "number"
+              },
+              "auto_decline_gbp": {
+                "type": "number"
+              }
+            }
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "offer_id": {
+            "type": "string"
+          },
+          "listing_id": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "decline",
+              "counter"
+            ]
+          },
+          "counter_gbp": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  ]
+}

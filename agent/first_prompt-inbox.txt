@@ -1,1 +1,1 @@
-Inbox mode. Check the eBay inbox with ebay_seller get_inbox and handle every buyer question and Best Offer within policy.md. Do not create or change listings.
+Check the eBay inbox with ebay_seller get_inbox and handle every buyer question and Best Offer within policy.md. Do not create or change listings.

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { appToken, consentUrl, exchangeCode, rest, userToken } from "./ebay.ts";
 import { AGENT_DIR, env } from "./lib.ts";
-import { runInboxOnce, watch } from "./pipeline.ts";
+import { runInboxOnce, suggestVintedReply, watch } from "./pipeline.ts";
 
 function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -121,13 +121,17 @@ async function check() {
   console.log("eBay app and user tokens OK.");
 }
 
-const [command] = process.argv.slice(2);
+const [command, buyer, listing, message] = process.argv.slice(2);
 if (command === "login") await login();
 else if (command === "setup") await setup();
 else if (command === "check") await check();
 else if (command === "inbox") await runInboxOnce();
+else if (command === "vinted-reply") {
+  if (!buyer || !listing || !message) throw new Error('usage: npx tsx worker.ts vinted-reply "<buyer>" "<listing title>" "<message>"');
+  console.log(await suggestVintedReply({ buyer, listing, message }));
+}
 else if (command === "watch") await watch();
 else {
-  console.error("usage: npx tsx worker.ts login | setup | check | inbox | watch");
+  console.error('usage: npx tsx worker.ts login | setup | check | inbox | vinted-reply "<buyer>" "<listing title>" "<message>" | watch');
   process.exitCode = 2;
 }
