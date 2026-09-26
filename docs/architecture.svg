@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" role="img" aria-label="Sell with 2ndLife flow: an iPhone uploads item photos and details to Supabase, five Grok Bots research and prepare listings and replies, and a policy-checking Mac worker publishes to eBay, drafts in Vinted, reads Gmail, serves a local dashboard, and sends ntfy notifications back to the phone.">
+<style>
+.bg{fill:#faf9f7}.cloud{fill:#fbf0ea;stroke:#ecc6b3}.local{fill:#eaf4f0;stroke:#b3d6cb}
+.card{fill:#fff;stroke:#d9d4cc}.cardc{fill:#fff;stroke:#c96442;stroke-width:1.6}.cardl{fill:#fff;stroke:#2f7a68;stroke-width:1.6}
+.fillc{fill:#c96442}.filll{fill:#2f7a68}
+text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.t{fill:#1f1e1d;font-size:14px;font-weight:600}.s{fill:#6b6862;font-size:12px}.m{fill:#6b6862;font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.k{font-size:11px;font-weight:700;letter-spacing:.08em}.kc{fill:#b4552f}.kl{fill:#2a6b5b}.km{fill:#8a857d}
+.lab{fill:#4a4742;font-size:12px}.inv{fill:#fff;font-size:13px;font-weight:600}
+.ln{stroke:#8a857d;stroke-width:1.5;fill:none}.lnc{stroke:#c96442}.lnl{stroke:#2f7a68}.dash{stroke-dasharray:5 4}.life{stroke:#c9c3ba;stroke-dasharray:3 4;stroke-width:1.2}
+.ah{fill:#8a857d}.ahc{fill:#c96442}.ahl{fill:#2f7a68}
+@media (prefers-color-scheme:dark){
+.bg{fill:#1c1b1a}.cloud{fill:#2b221e;stroke:#6b3f2e}.local{fill:#1c2825;stroke:#2f5a4f}
+.card,.cardc,.cardl{fill:#262523}.card{stroke:#45413c}.cardc{stroke:#e08a66}.cardl{stroke:#5fb39d}
+.fillc{fill:#b4552f}.filll{fill:#2a6b5b}
+.t{fill:#ece9e4}.s,.m{fill:#a39f98}.kc{fill:#e08a66}.kl{fill:#5fb39d}.km{fill:#8f8a82}.lab{fill:#cfcac2}
+.ln{stroke:#8f8a82}.lnc{stroke:#e08a66}.lnl{stroke:#5fb39d}.life{stroke:#4a4640}
+.ah{fill:#8f8a82}.ahc{fill:#e08a66}.ahl{fill:#5fb39d}}
+</style>
+<defs>
+<marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+<marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahc" d="M0 0L10 5L0 10z"/></marker>
+<marker id="al" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahl" d="M0 0L10 5L0 10z"/></marker>
+</defs>
+<rect class="bg" width="1000" height="620"/>
+
+<rect class="cloud" x="20" y="18" width="200" height="350" rx="16"/>
+<text class="k kc" x="40" y="44">PHONE</text>
+<rect class="cardc" x="40" y="62" width="160" height="130" rx="12"/>
+<text class="k kc" x="56" y="85">IPHONE</text>
+<text class="t" x="56" y="111">Share ▸</text>
+<text class="t" x="56" y="133">"Sell with 2ndLife"</text>
+<text class="s" x="56" y="158">photos + size,</text>
+<text class="s" x="56" y="176">condition, flaws</text>
+<rect class="card" x="40" y="260" width="170" height="70" rx="12"/>
+<text class="k km" x="56" y="283">PUSH NOTIFICATIONS</text>
+<text class="t" x="56" y="307">ntfy</text>
+<text class="s" x="96" y="307">results, escalations</text>
+
+<rect class="cloud" x="280" y="18" width="260" height="350" rx="16"/>
+<text class="k kc" x="300" y="44">SUPABASE</text>
+<rect class="cardc" x="300" y="62" width="220" height="108" rx="12"/>
+<text class="k kc" x="316" y="85">DATA + PHOTOS</text>
+<text class="t" x="316" y="111">item rows + private</text>
+<text class="t" x="316" y="133">photo bucket</text>
+<rect class="card" x="300" y="190" width="220" height="132" rx="12"/>
+<text class="k km" x="316" y="214">TABLES</text>
+<text class="m" x="316" y="242">grok_items</text>
+<text class="m" x="316" y="268">grok_inbox</text>
+<text class="m" x="316" y="294">grok_vinted_messages</text>
+
+<line class="ln lnc" x1="202" y1="118" x2="298" y2="118" marker-end="url(#ac)"/>
+<text class="lab" x="250" y="106" text-anchor="middle" style="font-size:10px">uploads</text>
+
+<rect class="cloud" x="640" y="18" width="340" height="350" rx="16"/>
+<text class="k kc" x="660" y="44">GROK BOTS · CURSOR</text>
+<rect class="cardc" x="660" y="62" width="200" height="50" rx="10"/>
+<text class="t" x="674" y="83">1 Researcher</text>
+<text class="s" x="674" y="102">identity, RRP</text>
+<rect class="cardc" x="660" y="120" width="200" height="58" rx="10"/>
+<text class="t" x="674" y="141">2 eBay Poster</text>
+<text class="s" x="674" y="157">ebay.co.uk comps, price,</text>
+<text class="s" x="674" y="171">listing</text>
+<rect class="cardc" x="660" y="186" width="200" height="58" rx="10"/>
+<text class="t" x="674" y="207">3 Vinted Poster</text>
+<text class="s" x="674" y="225">Vinted price, listing</text>
+<rect class="cardc" x="660" y="252" width="200" height="50" rx="10"/>
+<text class="t" x="674" y="273">4 eBay Buyer</text>
+<text class="s" x="674" y="292">answers, offers</text>
+<rect class="cardc" x="660" y="310" width="200" height="50" rx="10"/>
+<text class="t" x="674" y="331">5 Vinted Reply</text>
+<text class="s" x="674" y="350">suggested replies</text>
+<rect class="card" x="875" y="62" width="85" height="50" rx="10"/>
+<text class="k km" x="887" y="82">SEARCH</text>
+<text class="t" x="887" y="102">Tavily</text>
+<line class="ln lnc" x1="875" y1="87" x2="862" y2="87" marker-end="url(#ac)"/>
+<path class="ln lnc" d="M960 87 H970 V149 H862" marker-end="url(#ac)"/>
+<path class="ln lnc" d="M970 149 V215 H862" marker-end="url(#ac)"/>
+
+<line class="ln lnc" x1="520" y1="95" x2="638" y2="95" marker-end="url(#ac)"/>
+<text class="lab" x="580" y="72" text-anchor="middle" style="font-size:10px">webhook on every</text>
+<text class="lab" x="580" y="84" text-anchor="middle" style="font-size:10px">new row</text>
+<line class="ln lnc" x1="638" y1="145" x2="520" y2="145" marker-end="url(#ac)"/>
+<text class="lab" x="580" y="161" text-anchor="middle" style="font-size:10px">bots write results</text>
+
+<rect class="local" x="20" y="390" width="960" height="215" rx="16"/>
+<text class="k kl" x="40" y="416">YOUR MAC · THE HANDS</text>
+<rect class="cardl" x="40" y="434" width="285" height="150" rx="12"/>
+<text class="k kl" x="56" y="458">LOCAL PROCESS</text>
+<text class="t" x="56" y="482">Mac worker</text>
+<text class="s" x="56" y="506">holds the eBay token, Vinted login</text>
+<text class="s" x="56" y="525">and Gmail · checks policy.json first</text>
+<text class="m" x="56" y="552">reads ready rows every 1 min</text>
+
+<rect class="cardl" x="365" y="434" width="165" height="92" rx="12"/>
+<text class="k kl" x="381" y="458">OUTPUT</text>
+<text class="t" x="381" y="482">eBay API</text>
+<text class="s" x="381" y="503">publish, replies, offers</text>
+<rect class="cardl" x="550" y="434" width="180" height="92" rx="12"/>
+<text class="k kl" x="566" y="458">OUTPUT</text>
+<text class="t" x="566" y="482">Chrome</text>
+<text class="s" x="566" y="503">Vinted DRAFT</text>
+<text class="s" x="566" y="519">you press Upload</text>
+<rect class="cardl" x="750" y="434" width="210" height="92" rx="12"/>
+<text class="k kl" x="766" y="458">READ-ONLY</text>
+<text class="t" x="766" y="482">Gmail</text>
+<text class="s" x="766" y="503">Vinted buyer emails → Bot 5</text>
+<rect class="card" x="365" y="544" width="365" height="40" rx="12"/>
+<text class="t" x="381" y="569">Dashboard</text>
+<text class="m" x="468" y="569">127.0.0.1:4545</text>
+
+<path class="ln" d="M410 322 V380 H250 V432" marker-end="url(#a)"/>
+<text class="lab" x="330" y="376" text-anchor="middle" style="font-size:10px">ready rows every 1 min</text>
+<line class="ln lnl" x1="325" y1="480" x2="363" y2="480" marker-end="url(#al)"/>
+<path class="ln lnl" d="M300 434 V420 H640 V432" marker-end="url(#al)"/>
+<path class="ln lnl" d="M280 434 V400 H800 V432" marker-end="url(#al)"/>
+<line class="ln lnl" x1="325" y1="564" x2="363" y2="564" marker-end="url(#al)"/>
+
+<path class="ln" d="M855 432 V380 H970 V335 H862" marker-end="url(#a)"/>
+<text class="lab" x="910" y="377" text-anchor="middle" style="font-size:10px">buyer emails to Bot 5</text>
+<path class="ln lnl" d="M40 550 H26 V295 H38" marker-end="url(#al)"/>
+<text class="lab" x="38" y="358" text-anchor="middle" transform="rotate(-90 38 358)" style="font-size:10px">ntfy push</text>
+</svg>

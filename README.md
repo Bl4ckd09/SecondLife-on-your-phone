@@ -8,43 +8,7 @@ This is a fresh build next to [SecondLife](https://github.com/Bl4ckd09/SecondLif
 
 One Shortcut, five Grok Bots, and one Mac that holds every login and enforces the rules.
 
-```
- iPhone  Share ▸ "Sell with 2ndLife"
-    │  photos + size, condition, flaws (straight to Supabase, no Mac needed)
-    ▼
- ┌──────────────────────────────────────┐
- │ Supabase                             │   grok_items · grok_inbox
- │ item rows + private photo bucket     │   grok_vinted_messages
- └───┬──────────────────────────▲───────┘
-     │ webhook on every new row │ bots write results
-     ▼                          │
- ┌──────────────────────────────┴───────┐
- │ 5 Grok Bots (Cursor)                 │
- │ 1 Researcher     identity, RRP       │ ◀── Tavily search
- │ 2 eBay Poster    ebay.co.uk comps,   │
- │                  price, listing      │
- │ 3 Vinted Poster  Vinted price,       │
- │                  listing             │
- │ 4 eBay Buyer     answers, offers     │
- │ 5 Vinted Reply   suggested replies   │
- └──────────────────────────────────────┘
-     │ ready rows, checked every 1 min
-     ▼
- ┌──────────────────────────────────────┐
- │ Mac worker                           │
- │ holds the eBay token, Vinted login   │
- │ and Gmail; checks policy.json first  │
- └──┬───────────┬───────────┬───────────┘
-    ▼           ▼           ▼
- eBay API    Chrome      Gmail (read-only)
- publish,    Vinted      Vinted buyer emails
- replies,    DRAFT,      go back to Bot 5
- offers      you press
-             Upload
-    │
-    ▼
- push to your phone (ntfy) · dashboard http://127.0.0.1:4545
-```
+![How Sell with 2ndLife works](docs/architecture.svg)
 
 | Step | Who does it | What the Mac does |
 |---|---|---|
