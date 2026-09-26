@@ -1,0 +1,4 @@
+{
+  "name": "secondlife-ebay-env",
+  "config": {"type": "cloud", "networking": {"type": "unrestricted"}}
+}

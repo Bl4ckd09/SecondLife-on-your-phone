@@ -1,0 +1,13 @@
+Research item {{ITEM}}.
+
+Photos: every image under /mnt/session/uploads/. They are the seller's own photos of this one item.
+
+Seller facts (these outrank what you infer from photos):
+- Size: {{SIZE}}
+- Condition: {{CONDITION}}
+- Flaws: {{FLAWS}}
+
+Target: eBay UK (EBAY_GB). Currency: GBP.
+Identify the item, pick its eBay category, condition and aspects, and build a competitive price range from live eBay listings with ebay_research.
+
+Produce the dossier and research notes described in your instructions.

@@ -1,0 +1,15 @@
+.env
+.env.*
+IDS.env
+runs/
+node_modules/
+chrome-profile/
+.venv/
+__pycache__/
+*.egg-info/
+logs/
+items/
+dashboard.csv
+.pytest_cache/
+.DS_Store
+docs/shortcut/*.unsigned.shortcut

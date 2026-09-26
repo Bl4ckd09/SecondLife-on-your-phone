@@ -1,0 +1,6 @@
+{
+  "floor_ratio": 0.8,
+  "accept_ratio": 0.92,
+  "min_price_gbp": 1,
+  "max_price_gbp": 1000
+}
