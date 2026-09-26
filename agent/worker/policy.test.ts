@@ -36,17 +36,18 @@ assert.deepEqual(parseVintedNotification(42, offerMail), {
 assert.deepEqual(await dispatchTool({ kind: "research", item: "item-a" }, "unknown", {}), { error: "not_found" });
 const tavilyKey = env.TAVILY_API_KEY;
 delete env.TAVILY_API_KEY;
+assert.deepEqual(await dispatchTool({ kind: "research", item: "item-a" }, "tavily_search", { query: "coat" }), { error: "auth" });
+assert.deepEqual(await dispatchTool({ kind: "listing", item: "item-a" }, "tavily_search", { query: "coat" }), { error: "auth" });
+assert.deepEqual(await dispatchTool({ kind: "vinted", item: "item-a" }, "tavily_search", { query: "coat" }), { error: "auth" });
 assert.deepEqual(await dispatchTool({ kind: "research", item: "item-a" }, "web_search", { query: "coat" }), { error: "auth" });
-assert.deepEqual(await dispatchTool({ kind: "listing", item: "item-a" }, "web_search", { query: "coat" }), { error: "auth" });
-assert.deepEqual(await dispatchTool({ kind: "vinted", item: "item-a" }, "web_search", { query: "coat" }), { error: "auth" });
 if (tavilyKey) env.TAVILY_API_KEY = tavilyKey;
-assert.deepEqual(await dispatchTool({ kind: "inbox" }, "web_search", { query: "coat" }), {
+assert.deepEqual(await dispatchTool({ kind: "inbox" }, "tavily_search", { query: "coat" }), {
   error: "policy",
-  detail: "web_search is only available to research, listing, and vinted sessions",
+  detail: "tavily_search is only available to research, listing, and vinted sessions",
 });
 assert.deepEqual(await dispatchTool({ kind: "research", item: "item-a" }, "ebay_seller", {}), {
   error: "policy",
-  detail: "research sessions may only use ebay_research and web_search",
+  detail: "research sessions may only use ebay_research and tavily_search",
 });
 assert.deepEqual(await dispatchTool({ kind: "listing", item: "item-a" }, "ebay_seller", { action: "publish_listing", item_id: "item-b" }), {
   error: "policy",

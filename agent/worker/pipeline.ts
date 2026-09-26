@@ -185,9 +185,9 @@ function pendingTools(events: Record<string, unknown>[]): Record<string, unknown
 
 export async function dispatchTool(scope: ToolScope, name: unknown, input: unknown): Promise<unknown> {
   const tool = String(name ?? "");
-  if (tool === "web_search") {
+  if (tool === "tavily_search" || tool === "web_search") {
     if (scope.kind === "research" || scope.kind === "listing" || scope.kind === "vinted") return tavilySearch(input);
-    return { error: "policy", detail: "web_search is only available to research, listing, and vinted sessions" };
+    return { error: "policy", detail: "tavily_search is only available to research, listing, and vinted sessions" };
   }
   if (tool !== "ebay_research" && tool !== "ebay_seller") return { error: "not_found" };
 
@@ -213,7 +213,7 @@ export async function dispatchTool(scope: ToolScope, name: unknown, input: unkno
   const detail = scope.kind === "none"
     ? "this session may not use custom tools"
     : scope.kind === "research" || scope.kind === "vinted"
-      ? `${scope.kind} sessions may only use ebay_research and web_search`
+      ? `${scope.kind} sessions may only use ebay_research and tavily_search`
       : `${scope.kind} sessions may only use ebay_research`;
   return { error: "policy", detail };
 }
