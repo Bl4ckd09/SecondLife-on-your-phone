@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 280" role="img" aria-label="One item from sharing to live listings: you share photos, Supabase inserts a new row, Bot 1 researches it, Bots 2 and 3 prepare eBay and Vinted listings in parallel, the Mac publishes eBay and saves a Vinted draft, and you tap Upload in the Vinted app.">
+  <title>One item, share to live</title>
+  <style>
+    :root {
+      --bg:#faf9f7; --card:#ffffff; --ink:#1f1e1d; --muted:#6b6862; --line:#ddd8cf; --arrow:#8a857d;
+      --phone:#5b5fb0; --phone-soft:#eeeef9; --phone-edge:#c9cbea;
+      --data:#66717c; --data-soft:#f0f2f4; --data-edge:#cbd1d6;
+      --bot:#c96442; --bot-soft:#fbf0ea; --bot-edge:#ecc6b3;
+      --mac:#2f7a68; --mac-soft:#eaf4f0; --mac-edge:#b3d6cb;
+    }
+    @media (prefers-color-scheme:dark) {
+      :root {
+        color-scheme:dark;
+        --bg:#1c1b1a; --card:#262523; --ink:#ece9e4; --muted:#a39f98; --line:#3d3a36; --arrow:#8f8a82;
+        --phone:#9ea2ea; --phone-soft:#22233a; --phone-edge:#44477a;
+        --data:#b9c1c9; --data-soft:#22272b; --data-edge:#46515a;
+        --bot:#e08a66; --bot-soft:#2b221e; --bot-edge:#6b3f2e;
+        --mac:#5fb39d; --mac-soft:#1c2825; --mac-edge:#2f5a4f;
+      }
+    }
+    text { font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+    .bg { fill:var(--bg); }
+    .card { fill:var(--card); stroke:var(--line); }
+    .phone { stroke:var(--phone); stroke-width:1.6; }
+    .data { stroke:var(--data); stroke-width:1.6; }
+    .bot { stroke:var(--bot); stroke-width:1.6; }
+    .mac { stroke:var(--mac); stroke-width:1.6; }
+    .title { fill:var(--ink); font-size:18px; font-weight:700; }
+    .t { fill:var(--ink); font-size:12.5px; font-weight:650; }
+    .s { fill:var(--muted); font-size:10.5px; }
+    .state { fill:var(--muted); font:9.5px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .k { font:700 9.5px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.1em; }
+    .kp { fill:var(--phone); } .kd { fill:var(--data); } .kb { fill:var(--bot); } .km { fill:var(--mac); }
+    .rule { stroke:var(--line); stroke-width:1; }
+    .ln { fill:none; stroke-width:1.6; }
+    .ln-phone { stroke:var(--phone); } .ln-data { stroke:var(--data); } .ln-bot { stroke:var(--bot); } .ln-mac { stroke:var(--mac); }
+    .dash { stroke-dasharray:5 4; }
+    .ah-phone { fill:var(--phone); } .ah-data { fill:var(--data); } .ah-bot { fill:var(--bot); } .ah-mac { fill:var(--mac); }
+    .footer { fill:var(--muted); font-size:11px; }
+  </style>
+  <defs>
+    <marker id="arrow-phone" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="ah-phone" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="arrow-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="ah-data" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="arrow-bot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="ah-bot" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="arrow-mac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="ah-mac" d="M0 0L10 5L0 10z"/></marker>
+  </defs>
+
+  <rect class="bg" width="1000" height="280"/>
+  <text class="title" x="14" y="27">One item, share to live</text>
+
+  <g>
+    <rect class="card phone" x="14" y="44" width="142" height="168" rx="12"/>
+    <text class="k kp" x="28" y="67">YOU</text>
+    <text class="t" x="28" y="94">Share item</text>
+    <text class="s" x="28" y="116">photos, size,</text>
+    <text class="s" x="28" y="132">condition, flaws</text>
+    <line class="rule" x1="28" y1="157" x2="142" y2="157"/>
+    <text class="state" x="28" y="181">Shortcut uploads</text>
+
+    <rect class="card data" x="180" y="44" width="142" height="168" rx="12"/>
+    <text class="k kd" x="194" y="67">SUPABASE</text>
+    <text class="t" x="194" y="94">Store intake</text>
+    <text class="s" x="194" y="116">private photos</text>
+    <text class="s" x="194" y="132">insert item row</text>
+    <line class="rule" x1="194" y1="157" x2="308" y2="157"/>
+    <text class="state" x="194" y="181">status new</text>
+
+    <rect class="card bot" x="346" y="44" width="142" height="168" rx="12"/>
+    <text class="k kb" x="360" y="67">BOT 1</text>
+    <text class="t" x="360" y="94">Research item</text>
+    <text class="s" x="360" y="116">identity, RRP,</text>
+    <text class="s" x="360" y="132">condition, sources</text>
+    <line class="rule" x1="360" y1="157" x2="474" y2="157"/>
+    <text class="state" x="360" y="181">status researched</text>
+
+    <rect class="card bot" x="512" y="44" width="142" height="168" rx="12"/>
+    <text class="k kb" x="526" y="67">BOT 2 + BOT 3</text>
+    <text class="t" x="526" y="94">Price + write</text>
+    <text class="s" x="526" y="116">eBay and Vinted</text>
+    <text class="s" x="526" y="132">in parallel</text>
+    <line class="rule" x1="526" y1="157" x2="640" y2="157"/>
+    <text class="state" x="526" y="178">ebay_status ready</text>
+    <text class="state" x="526" y="194">vinted_status ready</text>
+
+    <rect class="card mac" x="678" y="44" width="142" height="168" rx="12"/>
+    <text class="k km" x="692" y="67">MAC</text>
+    <text class="t" x="692" y="94">Act on ready rows</text>
+    <text class="s" x="692" y="116">publish on eBay</text>
+    <text class="s" x="692" y="132">Save Vinted draft</text>
+    <line class="rule" x1="692" y1="157" x2="806" y2="157"/>
+    <text class="state" x="692" y="178">ebay_status live</text>
+    <text class="state" x="692" y="194">vinted_status drafted</text>
+
+    <rect class="card phone" x="844" y="44" width="142" height="168" rx="12"/>
+    <text class="k kp" x="858" y="67">YOU</text>
+    <text class="t" x="858" y="94">Publish Vinted</text>
+    <text class="s" x="858" y="116">open Drafts</text>
+    <text class="s" x="858" y="132">check the listing</text>
+    <line class="rule" x1="858" y1="157" x2="972" y2="157"/>
+    <text class="state" x="858" y="181">you tap Upload</text>
+    <text class="state" x="858" y="197">on Vinted</text>
+  </g>
+
+  <line class="ln ln-phone" x1="156" y1="128" x2="178" y2="128" marker-end="url(#arrow-phone)"/>
+  <line class="ln ln-bot dash" x1="322" y1="128" x2="344" y2="128" marker-end="url(#arrow-bot)"/>
+  <line class="ln ln-bot dash" x1="488" y1="128" x2="510" y2="128" marker-end="url(#arrow-bot)"/>
+  <line class="ln ln-mac dash" x1="654" y1="128" x2="676" y2="128" marker-end="url(#arrow-mac)"/>
+  <line class="ln ln-phone" x1="820" y1="128" x2="842" y2="128" marker-end="url(#arrow-phone)"/>
+
+  <line class="rule" x1="14" y1="232" x2="986" y2="232"/>
+  <text class="footer" x="500" y="258" text-anchor="middle">every hop is a row change: triggers wake the next bot, the Mac polls ready rows every minute</text>
+</svg>

@@ -8,7 +8,11 @@ This is a fresh build next to [SecondLife](https://github.com/Bl4ckd09/SecondLif
 
 One Shortcut, five Grok Bots, and one Mac that holds every login and enforces the rules.
 
-![How Sell with 2ndLife works](docs/architecture.svg)
+### Where each part runs
+
+![Where each part runs](docs/architecture.svg)
+
+The bots write rows in Supabase, while the Mac checks `policy.json` before it calls eBay or opens Chrome.
 
 | Step | Who does it | What the Mac does |
 |---|---|---|
@@ -18,7 +22,17 @@ One Shortcut, five Grok Bots, and one Mac that holds every login and enforces th
 | Answer eBay questions and Best Offers | Bot 4 | sends the reply or offer through the eBay API |
 | Suggest replies to Vinted buyers | Bot 5 | reads the Vinted email, pushes the suggestion to your phone |
 
-The bots never hold a key. They write to Supabase, the Mac checks `policy.json`, and only then calls eBay or opens Chrome.
+### One item, share to live
+
+![One item, share to live](docs/item-flow.svg)
+
+Supabase row changes move one item through research and parallel listing preparation to the Mac and your final Vinted upload.
+
+### A Best Offer, end to end
+
+![A Best Offer, end to end](docs/buyer-flow.svg)
+
+The Mac submits Bot 4's policy-bound answer only after checking `policy.json` again.
 
 ## What the agents may do
 

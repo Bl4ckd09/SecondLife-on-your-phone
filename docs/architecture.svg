@@ -1,123 +1,198 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" role="img" aria-label="Sell with 2ndLife flow: an iPhone uploads item photos and details to Supabase, five Grok Bots research and prepare listings and replies, and a policy-checking Mac worker publishes to eBay, drafts in Vinted, reads Gmail, serves a local dashboard, and sends ntfy notifications back to the phone.">
-<style>
-.bg{fill:#faf9f7}.cloud{fill:#fbf0ea;stroke:#ecc6b3}.local{fill:#eaf4f0;stroke:#b3d6cb}
-.card{fill:#fff;stroke:#d9d4cc}.cardc{fill:#fff;stroke:#c96442;stroke-width:1.6}.cardl{fill:#fff;stroke:#2f7a68;stroke-width:1.6}
-.fillc{fill:#c96442}.filll{fill:#2f7a68}
-text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-.t{fill:#1f1e1d;font-size:14px;font-weight:600}.s{fill:#6b6862;font-size:12px}.m{fill:#6b6862;font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-.k{font-size:11px;font-weight:700;letter-spacing:.08em}.kc{fill:#b4552f}.kl{fill:#2a6b5b}.km{fill:#8a857d}
-.lab{fill:#4a4742;font-size:12px}.inv{fill:#fff;font-size:13px;font-weight:600}
-.ln{stroke:#8a857d;stroke-width:1.5;fill:none}.lnc{stroke:#c96442}.lnl{stroke:#2f7a68}.dash{stroke-dasharray:5 4}.life{stroke:#c9c3ba;stroke-dasharray:3 4;stroke-width:1.2}
-.ah{fill:#8a857d}.ahc{fill:#c96442}.ahl{fill:#2f7a68}
-@media (prefers-color-scheme:dark){
-.bg{fill:#1c1b1a}.cloud{fill:#2b221e;stroke:#6b3f2e}.local{fill:#1c2825;stroke:#2f5a4f}
-.card,.cardc,.cardl{fill:#262523}.card{stroke:#45413c}.cardc{stroke:#e08a66}.cardl{stroke:#5fb39d}
-.fillc{fill:#b4552f}.filll{fill:#2a6b5b}
-.t{fill:#ece9e4}.s,.m{fill:#a39f98}.kc{fill:#e08a66}.kl{fill:#5fb39d}.km{fill:#8f8a82}.lab{fill:#cfcac2}
-.ln{stroke:#8f8a82}.lnc{stroke:#e08a66}.lnl{stroke:#5fb39d}.life{stroke:#4a4640}
-.ah{fill:#8f8a82}.ahc{fill:#e08a66}.ahl{fill:#5fb39d}}
-</style>
-<defs>
-<marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
-<marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahc" d="M0 0L10 5L0 10z"/></marker>
-<marker id="al" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahl" d="M0 0L10 5L0 10z"/></marker>
-</defs>
-<rect class="bg" width="1000" height="620"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" role="img" aria-label="Where each part runs: your phone uploads a new item to Supabase, Supabase wakes five Grok Bots in Cursor, and a policy-checking Mac worker publishes to eBay, saves Vinted drafts, reads Vinted buyer email, serves a local dashboard, and pushes updates to the phone.">
+  <title>Where each part runs</title>
+  <style>
+    :root {
+      --bg:#faf9f7; --card:#ffffff; --ink:#1f1e1d; --muted:#6b6862; --line:#ddd8cf; --arrow:#8a857d;
+      --phone:#5b5fb0; --phone-soft:#eeeef9; --phone-edge:#c9cbea;
+      --data:#66717c; --data-soft:#f0f2f4; --data-edge:#cbd1d6;
+      --bot:#c96442; --bot-soft:#fbf0ea; --bot-edge:#ecc6b3;
+      --mac:#2f7a68; --mac-soft:#eaf4f0; --mac-edge:#b3d6cb;
+    }
+    @media (prefers-color-scheme:dark) {
+      :root {
+        color-scheme:dark;
+        --bg:#1c1b1a; --card:#262523; --ink:#ece9e4; --muted:#a39f98; --line:#3d3a36; --arrow:#8f8a82;
+        --phone:#9ea2ea; --phone-soft:#22233a; --phone-edge:#44477a;
+        --data:#b9c1c9; --data-soft:#22272b; --data-edge:#46515a;
+        --bot:#e08a66; --bot-soft:#2b221e; --bot-edge:#6b3f2e;
+        --mac:#5fb39d; --mac-soft:#1c2825; --mac-edge:#2f5a4f;
+      }
+    }
+    text { font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+    .bg { fill:var(--bg); }
+    .zone-phone { fill:var(--phone-soft); stroke:var(--phone-edge); }
+    .zone-data { fill:var(--data-soft); stroke:var(--data-edge); }
+    .zone-bot { fill:var(--bot-soft); stroke:var(--bot-edge); }
+    .zone-mac { fill:var(--mac-soft); stroke:var(--mac-edge); }
+    .card { fill:var(--card); stroke:var(--line); }
+    .card-phone { fill:var(--card); stroke:var(--phone); stroke-width:1.5; }
+    .card-data { fill:var(--card); stroke:var(--data); stroke-width:1.5; }
+    .card-bot { fill:var(--card); stroke:var(--bot); stroke-width:1.5; }
+    .card-mac { fill:var(--card); stroke:var(--mac); stroke-width:1.5; }
+    .title { fill:var(--ink); font-size:18px; font-weight:700; }
+    .t { fill:var(--ink); font-size:12.5px; font-weight:650; }
+    .s { fill:var(--muted); font-size:10.5px; }
+    .m { fill:var(--muted); font:10px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .k { font:700 10px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.1em; }
+    .kp { fill:var(--phone); } .kd { fill:var(--data); } .kb { fill:var(--bot); } .km { fill:var(--mac); }
+    .legend { fill:var(--muted); font-size:10.5px; }
+    .label { fill:var(--muted); font-size:9.5px; }
+    .ln { fill:none; stroke:var(--arrow); stroke-width:1.5; }
+    .ln-phone { stroke:var(--phone); } .ln-data { stroke:var(--data); } .ln-bot { stroke:var(--bot); } .ln-mac { stroke:var(--mac); }
+    .dash { stroke-dasharray:5 4; }
+    .ah { fill:var(--arrow); } .ah-phone { fill:var(--phone); } .ah-data { fill:var(--data); } .ah-bot { fill:var(--bot); } .ah-mac { fill:var(--mac); }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="arrow-phone" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="ah-phone" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="arrow-data" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="ah-data" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="arrow-bot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="ah-bot" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="arrow-mac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="ah-mac" d="M0 0L10 5L0 10z"/></marker>
+  </defs>
 
-<rect class="cloud" x="20" y="18" width="200" height="350" rx="16"/>
-<text class="k kc" x="40" y="44">PHONE</text>
-<rect class="cardc" x="40" y="62" width="160" height="130" rx="12"/>
-<text class="k kc" x="56" y="85">IPHONE</text>
-<text class="t" x="56" y="111">Share ▸</text>
-<text class="t" x="56" y="133">"Sell with 2ndLife"</text>
-<text class="s" x="56" y="158">photos + size,</text>
-<text class="s" x="56" y="176">condition, flaws</text>
-<rect class="card" x="40" y="260" width="170" height="70" rx="12"/>
-<text class="k km" x="56" y="283">PUSH NOTIFICATIONS</text>
-<text class="t" x="56" y="307">ntfy</text>
-<text class="s" x="96" y="307">results, escalations</text>
+  <rect class="bg" width="1000" height="600"/>
+  <text class="title" x="18" y="29">Where each part runs</text>
+  <g aria-label="Colour legend">
+    <rect class="zone-phone" x="402" y="16" width="12" height="12" rx="3"/><text class="legend" x="420" y="26">your phone</text>
+    <rect class="zone-data" x="500" y="16" width="12" height="12" rx="3"/><text class="legend" x="518" y="26">Supabase</text>
+    <rect class="zone-bot" x="601" y="16" width="12" height="12" rx="3"/><text class="legend" x="619" y="26">Grok Bots</text>
+    <rect class="zone-mac" x="704" y="16" width="12" height="12" rx="3"/><text class="legend" x="722" y="26">your Mac</text>
+  </g>
 
-<rect class="cloud" x="280" y="18" width="260" height="350" rx="16"/>
-<text class="k kc" x="300" y="44">SUPABASE</text>
-<rect class="cardc" x="300" y="62" width="220" height="108" rx="12"/>
-<text class="k kc" x="316" y="85">DATA + PHOTOS</text>
-<text class="t" x="316" y="111">item rows + private</text>
-<text class="t" x="316" y="133">photo bucket</text>
-<rect class="card" x="300" y="190" width="220" height="132" rx="12"/>
-<text class="k km" x="316" y="214">TABLES</text>
-<text class="m" x="316" y="242">grok_items</text>
-<text class="m" x="316" y="268">grok_inbox</text>
-<text class="m" x="316" y="294">grok_vinted_messages</text>
+  <rect class="zone-phone" x="16" y="50" width="164" height="462" rx="14"/>
+  <text class="k kp" x="30" y="75">YOUR PHONE</text>
+  <rect class="card-phone" x="30" y="92" width="136" height="124" rx="10"/>
+  <text class="t" x="42" y="114">Sell with 2ndLife</text>
+  <text class="s" x="42" y="134">Shortcut asks size,</text>
+  <text class="s" x="42" y="150">condition and flaws</text>
+  <text class="s" x="42" y="170">uploads photos with</text>
+  <text class="s" x="42" y="186">the anon key</text>
+  <text class="m" x="42" y="204">insert only</text>
 
-<line class="ln lnc" x1="202" y1="118" x2="298" y2="118" marker-end="url(#ac)"/>
-<text class="lab" x="250" y="106" text-anchor="middle" style="font-size:10px">uploads</text>
+  <rect class="card-phone" x="30" y="232" width="136" height="112" rx="10"/>
+  <text class="t" x="42" y="254">ntfy app</text>
+  <text class="s" x="42" y="274">live on eBay</text>
+  <text class="s" x="42" y="290">Vinted draft ready</text>
+  <text class="s" x="42" y="306">escalations</text>
+  <text class="s" x="42" y="322">reply suggestions</text>
 
-<rect class="cloud" x="640" y="18" width="340" height="350" rx="16"/>
-<text class="k kc" x="660" y="44">GROK BOTS · CURSOR</text>
-<rect class="cardc" x="660" y="62" width="200" height="50" rx="10"/>
-<text class="t" x="674" y="83">1 Researcher</text>
-<text class="s" x="674" y="102">identity, RRP</text>
-<rect class="cardc" x="660" y="120" width="200" height="58" rx="10"/>
-<text class="t" x="674" y="141">2 eBay Poster</text>
-<text class="s" x="674" y="157">ebay.co.uk comps, price,</text>
-<text class="s" x="674" y="171">listing</text>
-<rect class="cardc" x="660" y="186" width="200" height="58" rx="10"/>
-<text class="t" x="674" y="207">3 Vinted Poster</text>
-<text class="s" x="674" y="225">Vinted price, listing</text>
-<rect class="cardc" x="660" y="252" width="200" height="50" rx="10"/>
-<text class="t" x="674" y="273">4 eBay Buyer</text>
-<text class="s" x="674" y="292">answers, offers</text>
-<rect class="cardc" x="660" y="310" width="200" height="50" rx="10"/>
-<text class="t" x="674" y="331">5 Vinted Reply</text>
-<text class="s" x="674" y="350">suggested replies</text>
-<rect class="card" x="875" y="62" width="85" height="50" rx="10"/>
-<text class="k km" x="887" y="82">SEARCH</text>
-<text class="t" x="887" y="102">Tavily</text>
-<line class="ln lnc" x1="875" y1="87" x2="862" y2="87" marker-end="url(#ac)"/>
-<path class="ln lnc" d="M960 87 H970 V149 H862" marker-end="url(#ac)"/>
-<path class="ln lnc" d="M970 149 V215 H862" marker-end="url(#ac)"/>
+  <rect class="card-phone" x="30" y="360" width="136" height="112" rx="10"/>
+  <text class="t" x="42" y="382">Vinted app</text>
+  <text class="s" x="42" y="402">Drafts</text>
+  <text class="s" x="42" y="418">you tap Upload</text>
+  <text class="m" x="42" y="442">the only send</text>
+  <text class="m" x="42" y="458">on Vinted</text>
 
-<line class="ln lnc" x1="520" y1="95" x2="638" y2="95" marker-end="url(#ac)"/>
-<text class="lab" x="580" y="72" text-anchor="middle" style="font-size:10px">webhook on every</text>
-<text class="lab" x="580" y="84" text-anchor="middle" style="font-size:10px">new row</text>
-<line class="ln lnc" x1="638" y1="145" x2="520" y2="145" marker-end="url(#ac)"/>
-<text class="lab" x="580" y="161" text-anchor="middle" style="font-size:10px">bots write results</text>
+  <rect class="zone-data" x="192" y="50" width="190" height="462" rx="14"/>
+  <text class="k kd" x="206" y="75">SUPABASE</text>
+  <rect class="card-data" x="206" y="92" width="162" height="78" rx="10"/>
+  <text class="t" x="218" y="114">Photo bucket intake</text>
+  <text class="s" x="218" y="136">private</text>
+  <text class="m" x="218" y="154">phone upload only</text>
 
-<rect class="local" x="20" y="390" width="960" height="215" rx="16"/>
-<text class="k kl" x="40" y="416">YOUR MAC · THE HANDS</text>
-<rect class="cardl" x="40" y="434" width="285" height="150" rx="12"/>
-<text class="k kl" x="56" y="458">LOCAL PROCESS</text>
-<text class="t" x="56" y="482">Mac worker</text>
-<text class="s" x="56" y="506">holds the eBay token, Vinted login</text>
-<text class="s" x="56" y="525">and Gmail · checks policy.json first</text>
-<text class="m" x="56" y="552">reads ready rows every 1 min</text>
+  <rect class="card-data" x="206" y="186" width="162" height="116" rx="10"/>
+  <text class="k kd" x="218" y="208">TABLES</text>
+  <text class="m" x="218" y="232">grok_items</text>
+  <text class="m" x="218" y="254">grok_inbox</text>
+  <text class="m" x="218" y="276">grok_vinted_messages</text>
 
-<rect class="cardl" x="365" y="434" width="165" height="92" rx="12"/>
-<text class="k kl" x="381" y="458">OUTPUT</text>
-<text class="t" x="381" y="482">eBay API</text>
-<text class="s" x="381" y="503">publish, replies, offers</text>
-<rect class="cardl" x="550" y="434" width="180" height="92" rx="12"/>
-<text class="k kl" x="566" y="458">OUTPUT</text>
-<text class="t" x="566" y="482">Chrome</text>
-<text class="s" x="566" y="503">Vinted DRAFT</text>
-<text class="s" x="566" y="519">you press Upload</text>
-<rect class="cardl" x="750" y="434" width="210" height="92" rx="12"/>
-<text class="k kl" x="766" y="458">READ-ONLY</text>
-<text class="t" x="766" y="482">Gmail</text>
-<text class="s" x="766" y="503">Vinted buyer emails → Bot 5</text>
-<rect class="card" x="365" y="544" width="365" height="40" rx="12"/>
-<text class="t" x="381" y="569">Dashboard</text>
-<text class="m" x="468" y="569">127.0.0.1:4545</text>
+  <rect class="card-data" x="206" y="318" width="162" height="112" rx="10"/>
+  <text class="t" x="218" y="340">grok_hooks + pg_net</text>
+  <text class="s" x="218" y="362">triggers wake the</text>
+  <text class="s" x="218" y="378">right bot within seconds</text>
+  <text class="m" x="218" y="404">webhook POST</text>
 
-<path class="ln" d="M410 322 V380 H250 V432" marker-end="url(#a)"/>
-<text class="lab" x="330" y="376" text-anchor="middle" style="font-size:10px">ready rows every 1 min</text>
-<line class="ln lnl" x1="325" y1="480" x2="363" y2="480" marker-end="url(#al)"/>
-<path class="ln lnl" d="M300 434 V420 H640 V432" marker-end="url(#al)"/>
-<path class="ln lnl" d="M280 434 V400 H800 V432" marker-end="url(#al)"/>
-<line class="ln lnl" x1="325" y1="564" x2="363" y2="564" marker-end="url(#al)"/>
+  <rect class="zone-bot" x="394" y="50" width="286" height="462" rx="14"/>
+  <text class="k kb" x="408" y="75">GROK BOTS IN CURSOR</text>
+  <rect class="card-bot" x="408" y="92" width="178" height="58" rx="9"/>
+  <text class="t" x="420" y="112">1 Researcher</text>
+  <text class="s" x="420" y="128">identity, RRP, condition</text>
+  <text class="m" x="420" y="143" style="font-size:8.7px">new → researching → researched</text>
 
-<path class="ln" d="M855 432 V380 H970 V335 H862" marker-end="url(#a)"/>
-<text class="lab" x="910" y="377" text-anchor="middle" style="font-size:10px">buyer emails to Bot 5</text>
-<path class="ln lnl" d="M40 550 H26 V295 H38" marker-end="url(#al)"/>
-<text class="lab" x="38" y="358" text-anchor="middle" transform="rotate(-90 38 358)" style="font-size:10px">ntfy push</text>
+  <rect class="card-bot" x="408" y="158" width="174" height="58" rx="9"/>
+  <text class="t" x="420" y="178">2 eBay Poster</text>
+  <text class="s" x="420" y="194">eBay comps, price, listing</text>
+  <text class="m" x="420" y="209" style="font-size:8.7px">waiting → pricing → ready</text>
+
+  <rect class="card-bot" x="408" y="224" width="174" height="58" rx="9"/>
+  <text class="t" x="420" y="244">3 Vinted Poster</text>
+  <text class="s" x="420" y="260">Vinted price and listing</text>
+  <text class="m" x="420" y="275" style="font-size:8.7px">waiting → pricing → ready</text>
+
+  <rect class="card-bot" x="408" y="290" width="174" height="58" rx="9"/>
+  <text class="t" x="420" y="310">4 eBay Buyer</text>
+  <text class="s" x="420" y="326">questions and Best Offers</text>
+  <text class="m" x="420" y="341" style="font-size:8.7px">grok_inbox new → answered</text>
+
+  <rect class="card-bot" x="408" y="356" width="174" height="58" rx="9"/>
+  <text class="t" x="420" y="376">5 Vinted Reply</text>
+  <text class="s" x="420" y="392">reply suggestions</text>
+  <text class="m" x="420" y="407" style="font-size:8.7px">messages new → suggested</text>
+
+  <rect class="card" x="598" y="92" width="68" height="58" rx="9"/>
+  <text class="k kb" x="610" y="112">SEARCH</text>
+  <text class="t" x="610" y="130">Tavily</text>
+  <text class="s" x="610" y="143">Bots 1-3</text>
+  <path class="ln ln-bot" d="M598 121 H588" marker-end="url(#arrow-bot)"/>
+  <path class="ln ln-bot" d="M598 132 H590 V187 H584" marker-end="url(#arrow-bot)"/>
+  <path class="ln ln-bot" d="M598 140 H592 V253 H584" marker-end="url(#arrow-bot)"/>
+
+  <rect class="card" x="408" y="430" width="258" height="52" rx="9"/>
+  <text class="s" x="537" y="452" text-anchor="middle">webhook + 5-min schedule</text>
+  <text class="s" x="537" y="468" text-anchor="middle">safety net</text>
+
+  <rect class="zone-mac" x="692" y="50" width="292" height="462" rx="14"/>
+  <text class="k km" x="706" y="75">YOUR MAC</text>
+  <rect class="card-mac" x="706" y="92" width="264" height="88" rx="10"/>
+  <text class="t" x="718" y="114">Worker</text>
+  <text class="s" x="718" y="134">reads ready rows every 1 min</text>
+  <text class="s" x="718" y="150">holds eBay token, Vinted login</text>
+  <text class="s" x="718" y="166">and Gmail app password</text>
+
+  <rect class="card-mac" x="706" y="194" width="264" height="118" rx="10"/>
+  <text class="t" x="718" y="216">policy.json gate</text>
+  <text class="s" x="718" y="236">floor 80% of list price</text>
+  <text class="s" x="718" y="252">auto-accept 92%</text>
+  <text class="s" x="718" y="268">blocks emails, phone numbers,</text>
+  <text class="s" x="718" y="284">outside links and off-platform payment</text>
+  <text class="m" x="718" y="300">checked before every action</text>
+
+  <rect class="card-mac" x="706" y="328" width="126" height="72" rx="10"/>
+  <text class="t" x="718" y="350">eBay API</text>
+  <text class="s" x="718" y="370">publish, replies,</text>
+  <text class="s" x="718" y="386">Best Offers</text>
+
+  <rect class="card-mac" x="844" y="328" width="126" height="72" rx="10"/>
+  <text class="t" x="856" y="350">Worker Chrome</text>
+  <text class="s" x="856" y="366">Vinted draft</text>
+  <text class="s" x="856" y="381">Save draft</text>
+  <text class="s" x="856" y="396">never Upload</text>
+
+  <rect class="card-mac" x="706" y="414" width="126" height="78" rx="10"/>
+  <text class="t" x="718" y="436">Gmail read-only</text>
+  <text class="s" x="718" y="454">Vinted buyer emails</text>
+  <text class="m" x="718" y="470" style="font-size:8.5px">→ grok_vinted_</text>
+  <text class="m" x="718" y="483" style="font-size:8.5px">messages</text>
+
+  <rect class="card-mac" x="844" y="414" width="126" height="78" rx="10"/>
+  <text class="t" x="856" y="436">Dashboard</text>
+  <text class="m" x="856" y="458">127.0.0.1:4545</text>
+
+  <path class="ln ln-phone" d="M166 154 H204" marker-end="url(#arrow-phone)"/>
+  <text class="label" x="185" y="144" text-anchor="middle">upload</text>
+  <path class="ln ln-bot dash" d="M368 374 H386 V121 H406" marker-end="url(#arrow-bot)"/>
+  <text class="label" x="404" y="360" text-anchor="middle" transform="rotate(-90 404 360)">wake</text>
+  <path class="ln ln-bot" d="M406 252 H370" marker-end="url(#arrow-bot)"/>
+  <text class="label" x="392" y="235" text-anchor="middle" transform="rotate(-90 392 235)">write</text>
+  <path class="ln ln-mac dash" d="M368 286 H386 V504 H688 V136 H704" marker-end="url(#arrow-mac)"/>
+  <text class="label" x="537" y="498" text-anchor="middle">poll ready rows every 1 min</text>
+
+  <text class="k" x="20" y="546" fill="var(--muted)">EXTERNAL</text>
+  <rect class="card" x="706" y="528" width="126" height="54" rx="10"/>
+  <text class="t" x="769" y="560" text-anchor="middle">ebay.co.uk</text>
+  <rect class="card" x="844" y="528" width="126" height="54" rx="10"/>
+  <text class="t" x="907" y="560" text-anchor="middle">vinted.co.uk</text>
+  <path class="ln ln-mac" d="M769 406 H698 V518 H769 V526" marker-end="url(#arrow-mac)"/>
+  <path class="ln ln-mac" d="M907 406 H978 V518 H907 V526" marker-end="url(#arrow-mac)"/>
+  <path class="ln ln-mac dash" d="M844 555 H838 V453 H834" marker-end="url(#arrow-mac)"/>
 </svg>
