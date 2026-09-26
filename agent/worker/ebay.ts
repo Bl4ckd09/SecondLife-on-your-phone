@@ -115,6 +115,7 @@ export async function rest(
       authorization: `Bearer ${token}`,
       "content-type": "application/json",
       "content-language": "en-GB",
+      "accept-language": "en-GB",
       "x-ebay-c-marketplace-id": "EBAY_GB",
     },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),

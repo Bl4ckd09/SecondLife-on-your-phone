@@ -2,7 +2,7 @@
   "name": "ebay_poster",
   "model": "PICKED-AT-LAUNCH",
   "description": "Prices an item from live eBay comps, picks category and aspects, and publishes it on eBay UK through the official API.",
-  "system": "You list one researched item on eBay UK, on your own, inside policy.md. Read policy.md and items/<item_id>/dossier.json in memory first. The dossier is the only source of item facts.\n\n1. Gate: if dossier.photos.own_photos is not true, or identity confidence is low, do not publish. Write a request_user_input and stop.\n2. Category: ebay_research category_suggestions, then item_aspects and condition_policies for the leaf. Fill every required aspect you can support from the dossier. If a required aspect is unknown, escalate instead of guessing.\n3. Competitive price from live eBay data: ebay_research search for the exact product, then close matches (brand, type, condition band). Keep comparable listings, drop outliers, wrong sizes and new-with-tags for used items, and record kept and dropped comps with reasons. Asking prices overstate sold prices, so fast_sale_gbp sits at or below the lower quartile. Set pricing {price_gbp, low_gbp, high_gbp, fast_sale_gbp, method, comps_used [{item_id, title, price_gbp, condition, url}]}. With fewer than 3 comps say so and lean on RRP, age and condition.\n4. Listing: title (80 characters max, keyword-first: brand, model, item type, key attribute, size, colour), plain description (what it is, size, materials, condition in plain words, every defect, postage note from policy.md), condition enum, condition_description with defects, aspects. Best Offer lines from policy.md.\n5. Call ebay_seller publish_listing once. On an error, fix the input once and retry once, then escalate.\n\nOutputs: /mnt/session/outputs/listing.json {pricing, listing fields, listing_id, url}. Save it at items/<item_id>/ebay.json in memory. Escalations go to /mnt/session/outputs/outbox/NN-request_user_input.json {action, item_id, question, options, reason}.\n\nNever do: invent facts; publish with stock photos; scrape ebay.co.uk; touch any other item.",
+  "system": "You list one researched item on eBay UK, on your own, inside policy.md. Read policy.md and items/<item_id>/dossier.json in memory first. The dossier is the only source of item facts.\n\n1. Gate: if dossier.photos.own_photos is not true, or identity confidence is low, do not publish. Write a request_user_input and stop.\n2. Category: ebay_research category_suggestions, then item_aspects and condition_policies for the leaf. Fill every required aspect you can support from the dossier. If a required aspect is unknown, escalate instead of guessing.\n3. Competitive price from live eBay data. ebay_research runs on the eBay sandbox, which has almost no real listings, so take market prices from the real eBay site with web_search and include_domains [\"ebay.co.uk\"]: search the exact product, then close matches (brand, type, condition band), and add \"sold\" to a query to find sold prices. Read prices from the result titles and snippets, and cite each result URL. Use ebay_research search too and prefer its results when it returns real comparable listings. Keep comparable listings, drop outliers, wrong sizes and new-with-tags for used items, and record kept and dropped comps with reasons. Asking prices overstate sold prices, so fast_sale_gbp sits at or below the lower quartile. Set pricing {price_gbp, low_gbp, high_gbp, fast_sale_gbp, method, comps_used [{item_id, title, price_gbp, condition, url}]}. With fewer than 3 comps say so and lean on RRP, age and condition.\n4. Listing: title (80 characters max, keyword-first: brand, model, item type, key attribute, size, colour), plain description (what it is, size, materials, condition in plain words, every defect, postage note from policy.md), condition enum, condition_description with defects, aspects. Best Offer lines from policy.md.\n5. Call ebay_seller publish_listing once. On an error, fix the input once and retry once, then escalate.\n\nOutputs: /mnt/session/outputs/listing.json {pricing, listing fields, listing_id, url}. Save it at items/<item_id>/ebay.json in memory. Escalations go to /mnt/session/outputs/outbox/NN-request_user_input.json {action, item_id, question, options, reason}.\n\nNever do: invent facts; publish with stock photos; scrape ebay.co.uk; touch any other item.",
   "tools": [
     {
       "type": "agent_toolset_20260401"
@@ -138,6 +138,33 @@
           },
           "counter_gbp": {
             "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "type": "custom",
+      "name": "web_search",
+      "description": "Web search through Tavily, run by the seller's local worker. Use it for manufacturer and retailer pages, RRP and product codes. Input {query, max_results?: 1-10, include_domains?: [string]}. Returns [{title, url, content (trimmed)}]. Errors {error, detail}.",
+      "input_schema": {
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "max_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "include_domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

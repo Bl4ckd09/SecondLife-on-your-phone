@@ -5,8 +5,11 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { z } from "zod/v4";
+import { fetchVintedNotifications, markVintedMailSeen } from "./gmail.ts";
+import { pollGrokItems } from "./grok.ts";
 import { MEM_BETA, RUNS, api, deleteFile, env, fetchOutputs, fillTemplate, notify, sleep, startSession, uploadFile } from "./lib.ts";
 import { delivered, runResearchTool, runSellerTool } from "./tools.ts";
+import { tavilySearch } from "./tavily.ts";
 import { blockedReason, humanPause, openBrowser, type Hands } from "./browser.ts";
 
 const INTAKE = join(RUNS, "intake");
@@ -17,6 +20,7 @@ const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const POLL_MS = 15_000;
 const INTAKE_ITERATIONS = 1;
 const INBOX_MS = Math.max(1, Number(process.env.EBAY_INBOX_MINUTES ?? env.EBAY_INBOX_MINUTES ?? 10)) * 60_000;
+const VINTED_MAIL_MS = Math.max(1, Number(process.env.VINTED_MAIL_MINUTES ?? env.VINTED_MAIL_MINUTES ?? 5)) * 60_000;
 const Status = z.enum(["new", "researching", "listing", "live", "needs_you", "failed"]);
 const PriceHint = z.object({
   bargain: z.number().nullable(),
@@ -181,6 +185,10 @@ function pendingTools(events: Record<string, unknown>[]): Record<string, unknown
 
 export async function dispatchTool(scope: ToolScope, name: unknown, input: unknown): Promise<unknown> {
   const tool = String(name ?? "");
+  if (tool === "web_search") {
+    if (scope.kind === "research" || scope.kind === "listing" || scope.kind === "vinted") return tavilySearch(input);
+    return { error: "policy", detail: "web_search is only available to research, listing, and vinted sessions" };
+  }
   if (tool !== "ebay_research" && tool !== "ebay_seller") return { error: "not_found" };
 
   if (tool === "ebay_research") {
@@ -204,7 +212,9 @@ export async function dispatchTool(scope: ToolScope, name: unknown, input: unkno
   }
   const detail = scope.kind === "none"
     ? "this session may not use custom tools"
-    : `${scope.kind} sessions may only use ebay_research`;
+    : scope.kind === "research" || scope.kind === "vinted"
+      ? `${scope.kind} sessions may only use ebay_research and web_search`
+      : `${scope.kind} sessions may only use ebay_research`;
   return { error: "policy", detail };
 }
 
@@ -328,6 +338,7 @@ let hands: Hands | null = null;
 
 async function stepVinted(item: string) {
   const state = load(item);
+  const startNewSession = !state.vinted;
   if (!state.vinted) {
     if (!state.listingSession) return;
     state.vinted = { status: !env.VINTED_ID || env.VINTED_DISABLED === "1" ? "skipped" : "listing" };
@@ -338,6 +349,7 @@ async function stepVinted(item: string) {
   const vinted = state.vinted;
   if (vinted.status === "listing") {
     if (!vinted.session) {
+      if (!startNewSession) return;
       if (!env.VINTED_VERSION) throw new Error("VINTED_VERSION is missing");
       vinted.session = await startSession({
         kind: "vinted",
@@ -510,6 +522,21 @@ async function pollInbox() {
   inboxSession = await startInboxSession();
   if (!inboxSession) nextInboxAt = Date.now() + INBOX_MS;
 }
+let nextVintedMailAt = 0;
+let nextGrokAt = 0;
+
+async function pollVintedMail() {
+  if (!env.VINTED_EMAIL || !env.VINTED_EMAIL_APP_PASSWORD || Date.now() < nextVintedMailAt) return;
+  nextVintedMailAt = Date.now() + VINTED_MAIL_MS;
+  for (const notification of await fetchVintedNotifications()) {
+    try {
+      await suggestVintedReply(notification);
+      markVintedMailSeen(notification.uid);
+    } catch (error) {
+      console.error(`vinted mail ${notification.uid}: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+}
 
 function liveItems(): ItemState[] {
   if (!existsSync(INTAKE)) return [];
@@ -585,9 +612,19 @@ async function loop() {
       }
       clearLocalPhotosIfDone(load(item));
     }
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY && Date.now() >= nextGrokAt) {
+      nextGrokAt = Date.now() + 60_000;
+      try { await pollGrokItems(); } catch (error) {
+        console.error(`grok: ${error instanceof Error ? error.message : error}`);
+      }
+    }
     try { await pollInbox(); } catch (error) {
       console.error(`inbox: ${error instanceof Error ? error.message : error}`);
       nextInboxAt = Date.now() + INBOX_MS;
+    }
+    try { await pollVintedMail(); } catch (error) {
+      console.error(`vinted mail: ${error instanceof Error ? error.message : error}`);
+      nextVintedMailAt = Date.now() + VINTED_MAIL_MS;
     }
     await sleep(POLL_MS);
   }

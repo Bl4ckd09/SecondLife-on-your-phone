@@ -3,6 +3,8 @@ import { createServer, type ServerResponse } from "node:http";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { dashboardGrokRows } from "./grok.ts";
+import { env } from "./lib.ts";
 
 const RUNS = join(dirname(fileURLToPath(import.meta.url)), "..", "runs");
 const INTAKE = join(RUNS, "intake");
@@ -169,6 +171,23 @@ function vintedReplies(): string {
   suggestions.sort((left, right) => right.at - left.at);
   return suggestions.slice(0, 5).map((suggestion) => suggestion.html).join("") || `<p class="muted">No suggestions yet.</p>`;
 }
+async function grokSection(): Promise<string> {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return "";
+  try {
+    const rows = await dashboardGrokRows();
+    const items = rows.map((row) => {
+      const dossier = record(row.dossier);
+      const ebay = record(row.ebay);
+      const result = record(record(row.result).ebay);
+      const url = typeof result.url === "string" && result.url.startsWith("https://") ? result.url : "";
+      const identity = [dossier.brand, dossier.model].filter((value) => typeof value === "string" && value).join(" · ") || "Identity pending";
+      return `<article class="note"><div><strong class="mono">${esc(String(row.id ?? "").slice(0, 8))}</strong> ${tag(row.status)} · ${esc(identity)} · ${esc(money(ebay.price_gbp))}${url ? ` · <a href="${esc(url)}" target="_blank" rel="noreferrer">listing</a>` : ""}</div>${row.bot_notes ? `<div class="small">${esc(row.bot_notes)}</div>` : ""}</article>`;
+    }).join("");
+    return `<h2>Grok path</h2>${items || `<p class="muted">No Grok items yet.</p>`}`;
+  } catch (error) {
+    return `<h2>Grok path</h2><p class="error">Grok path unavailable: ${esc(error instanceof Error ? error.message : error)}</p>`;
+  }
+}
 
 function agentsLegend(): string {
   const agents = [
@@ -181,13 +200,13 @@ function agentsLegend(): string {
   return `<div class="inbox-grid">${agents.map(([name, description]) => `<article class="note"><strong>${esc(name)}</strong><div class="small">${esc(description)}</div></article>`).join("")}</div>`;
 }
 
-function render(): string {
+async function render(): Promise<string> {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="5"><title>SecondLife sales</title><style>
 :root{--bg:#f5f3ef;--card:#fff;--ink:#20201e;--muted:#6d6962;--line:#ddd7ce;--ok:#24745d;--run:#9a6819;--warn:#b24d34;--accent:#7048a8}
 @media(prefers-color-scheme:dark){:root{--bg:#171715;--card:#242320;--ink:#eeeae3;--muted:#aaa49a;--line:#3e3a34;--ok:#63b99e;--run:#e0ad58;--warn:#ed876f;--accent:#bd98ee}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:1120px;margin:auto;padding:24px 16px 48px}h1{font-size:22px;margin:0}h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:30px 0 12px}h3,h4{margin:0 0 6px}h4{font-size:12px;text-transform:uppercase;color:var(--muted)}a{color:var(--accent)}.muted{color:var(--muted)}.small,.meta{font-size:12px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.item,.note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 12px}.item header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.photos{display:flex;gap:6px;overflow-x:auto;max-width:55%}.photos img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}.channels,.inbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.channels{margin-top:12px}.channels section,.dossier{border-top:1px solid var(--line);padding-top:10px}.dossier{margin-top:10px}.dossier ol{margin:6px 0 0;padding-left:22px}.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:12px}.tag.ok{color:var(--ok);border-color:var(--ok)}.tag.run{color:var(--run);border-color:var(--run)}.tag.warn,.error{color:var(--warn)}.error{margin-top:10px;overflow-wrap:anywhere}.note.ask{border-left:3px solid var(--warn)}pre{white-space:pre-wrap;margin:6px 0 0;font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}ul{margin:5px 0;padding-left:20px}
 @media(max-width:700px){.channels,.inbox-grid{grid-template-columns:1fr}.item header{display:block}.photos{max-width:100%;margin-top:10px}}
-</style></head><body><main><h1>SecondLife sales</h1><div class="muted small">Read-only · refreshes every 5 seconds · ${esc(new Date().toLocaleString())}</div><h2>Agents</h2>${agentsLegend()}<h2>Items</h2>${itemCards()}<h2>Buyer inbox</h2>${buyerInbox()}<h2>Vinted reply suggestions</h2>${vintedReplies()}</main></body></html>`;
+</style></head><body><main><h1>SecondLife sales</h1><div class="muted small">Read-only · refreshes every 5 seconds · ${esc(new Date().toLocaleString())}</div><h2>Agents</h2>${agentsLegend()}<h2>Items</h2>${itemCards()}${await grokSection()}<h2>Buyer inbox</h2>${buyerInbox()}<h2>Vinted reply suggestions</h2>${vintedReplies()}</main></body></html>`;
 }
 
 function photoPath(url: string): string | null {
@@ -211,12 +230,12 @@ function sendPhoto(path: string, res: ServerResponse) {
   res.end(readFileSync(path));
 }
 
-createServer((req, res) => {
+createServer(async (req, res) => {
   const path = photoPath(req.url ?? "/");
   if (path) { sendPhoto(path, res); return; }
   if (req.url !== "/") { res.writeHead(404, { "content-type": "text/plain" }).end("not found"); return; }
   try {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" }).end(render());
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" }).end(await render());
   } catch (error) {
     res.writeHead(500, { "content-type": "text/plain; charset=utf-8" }).end(`dashboard error: ${error instanceof Error ? error.message : String(error)}`);
   }

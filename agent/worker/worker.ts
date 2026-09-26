@@ -2,6 +2,8 @@ import { chmodSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { appToken, consentUrl, exchangeCode, rest, userToken } from "./ebay.ts";
+import { fetchVintedNotifications } from "./gmail.ts";
+import { pollGrokItems } from "./grok.ts";
 import { AGENT_DIR, env } from "./lib.ts";
 import { runInboxOnce, suggestVintedReply, watch } from "./pipeline.ts";
 
@@ -126,12 +128,20 @@ if (command === "login") await login();
 else if (command === "setup") await setup();
 else if (command === "check") await check();
 else if (command === "inbox") await runInboxOnce();
+else if (command === "vinted-mail") {
+  const notifications = await fetchVintedNotifications();
+  if (!notifications.length) console.log("No Vinted buyer notifications found.");
+  for (const notification of notifications) {
+    console.log(`${notification.buyer}\t${notification.listing}\t${notification.message.replace(/\s+/g, " ").slice(0, 80)}`);
+  }
+}
 else if (command === "vinted-reply") {
   if (!buyer || !listing || !message) throw new Error('usage: npx tsx worker.ts vinted-reply "<buyer>" "<listing title>" "<message>"');
   console.log(await suggestVintedReply({ buyer, listing, message }));
 }
+else if (command === "grok-poll") await pollGrokItems();
 else if (command === "watch") await watch();
 else {
-  console.error('usage: npx tsx worker.ts login | setup | check | inbox | vinted-reply "<buyer>" "<listing title>" "<message>" | watch');
+  console.error('usage: npx tsx worker.ts login | setup | check | inbox | vinted-mail | vinted-reply "<buyer>" "<listing title>" "<message>" | grok-poll | watch');
   process.exitCode = 2;
 }

@@ -23,7 +23,7 @@ function readKV(file: string): Record<string, string> {
 
 // Later IDS.env lines win, so a bumped SELLER_VERSION overrides the first one. Shell env wins for local settings.
 const fromProcess = Object.fromEntries(
-  ["INTAKE_SECRET", "NTFY_TOPIC", "WORKSPACE", "EBAY_ENV", "VINTED_DISABLED"].filter((key) => process.env[key]).map((key) => [key, process.env[key]!]),
+  ["INTAKE_SECRET", "NTFY_TOPIC", "WORKSPACE", "EBAY_ENV", "VINTED_DISABLED", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"].filter((key) => process.env[key]).map((key) => [key, process.env[key]!]),
 );
 export const env: Record<string, string> = { ...readKV(join(AGENT_DIR, ".env")), ...readKV(join(AGENT_DIR, "IDS.env")), ...fromProcess };
 export const KEY = process.env.ANTHROPIC_API_KEY || env.ANTHROPIC_API_KEY;
