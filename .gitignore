@@ -1,5 +1,7 @@
 .env
 .env.*
+agent/.ebay-token.json
+agent/.ebay-setup.json
 IDS.env
 runs/
 node_modules/

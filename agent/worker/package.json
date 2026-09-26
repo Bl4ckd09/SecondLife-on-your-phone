@@ -1,17 +1,14 @@
 {
-  "name": "worker",
+  "name": "secondlife-ebay-worker",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "private": true,
   "type": "module",
+  "scripts": {
+    "test": "tsx policy.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
-    "@browserbasehq/stagehand": "^4.1.0",
+    "fast-xml-parser": "^5.11.1",
     "tsx": "^4.23.15",
     "zod": "^4.4.3"
   },

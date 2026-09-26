@@ -1,130 +1,128 @@
-// Local hands for seller_agent: runs the vinted_browser custom tool in a dedicated
-// Chrome profile on this machine and answers the managed agent's requires_action.
-//   npx tsx worker.ts login          one-time: sign in to Vinted in the worker profile
-//   npx tsx worker.ts inbox [max]    start a seller_agent inbox session and serve its tool calls
-//   npx tsx worker.ts watch          photo intake for the iPhone Shortcut + research → listing → Vinted draft
+import { chmodSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { z } from "zod/v4";
-import { CONSOLE, api, env, fetchOutputs, sleep, startSession } from "./lib.ts";
-import { PROFILE, blockedReason, humanPause, openBrowser, type Hands } from "./browser.ts";
-import { watch } from "./pipeline.ts";
+import { appToken, consentUrl, exchangeCode, rest, userToken } from "./ebay.ts";
+import { AGENT_DIR, env } from "./lib.ts";
+import { runInboxOnce, watch } from "./pipeline.ts";
 
-const INBOX = "https://www.vinted.co.uk/inbox";
-
-const ThreadList = z.object({
-  threads: z.array(z.object({ thread_url: z.string(), buyer: z.string(), unread: z.boolean() })),
-});
-const Thread = z.object({
-  buyer: z.string(),
-  listing_title: z.string(),
-  messages: z.array(z.object({ from: z.enum(["buyer", "seller"]), text: z.string() })),
-  offer_gbp: z.number().nullable(),
-});
-
-async function readInbox(h: Hands, max: number) {
-  await h.page.goto(INBOX);
-  await humanPause();
-  const why = await blockedReason(h);
-  if (why) return { error: why, detail: await h.page.url() };
-  const { data } = await h.stagehand.extract(
-    "List every conversation in the inbox with its absolute URL, the other user's name, and whether it is marked unread.",
-    ThreadList,
-  );
-  const unread = data.threads.filter((t) => t.unread).slice(0, Math.min(Math.max(max, 1), 5));
-  const out = [];
-  for (const t of unread) {
-    await h.page.goto(t.thread_url);
-    await humanPause();
-    const { data: th } = await h.stagehand.extract(
-      "Extract this conversation: the buyer's name, the title of the item it is about, every message in order " +
-        "(from = 'seller' for messages sent by the account owner, 'buyer' otherwise), and the amount in GBP of any offer card (null if none).",
-      Thread,
-    );
-    out.push({ thread_url: t.thread_url, ...th });
-  }
-  return out;
+function record(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
-async function typeReply(h: Hands, threadUrl: string, text: string) {
-  if (!threadUrl.startsWith("https://www.vinted.co.uk/")) return { error: "not_found", detail: "thread_url must be a vinted.co.uk URL" };
-  await h.page.goto(threadUrl);
-  await humanPause();
-  const why = await blockedReason(h);
-  if (why) return { error: why, detail: await h.page.url() };
-  const { data } = await h.stagehand.observe("find the text input where a new message is written");
-  if (!data.length) return { error: "not_found", detail: "no message box on the page" };
-  // fill() only sets the text. Nothing here presses Enter or clicks Send.
-  await h.page.locator(data[0].selector).fill(text);
-  return { typed: true, note: "Typed, not sent. The seller reviews and presses Send." };
+function array(value: unknown): unknown[] {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
 }
 
-async function runTool(h: Hands, input: any) {
-  try {
-    if (input.action === "read_inbox") return await readInbox(h, input.max_threads ?? 3);
-    if (input.action === "type_reply") return await typeReply(h, String(input.thread_url ?? ""), String(input.text ?? ""));
-    return { error: "not_found", detail: `unknown action ${input.action}` };
-  } catch (e: any) {
-    return { error: "blocked", detail: String(e?.message ?? e).slice(0, 300) };
-  }
+function text(value: unknown): string {
+  return String(value ?? "");
 }
 
 async function login() {
-  const h = await openBrowser();
-  await h.page.goto("https://www.vinted.co.uk/");
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  await rl.question("Sign in to Vinted in the opened Chrome window, then press Enter here. ");
-  rl.close();
-  await h.stagehand.close();
-  await h.browser.close();
-  console.log(`Saved. The worker profile lives in ${PROFILE}`);
+  console.log(consentUrl());
+  const prompt = createInterface({ input: process.stdin, output: process.stdout });
+  const pasted = (await prompt.question("Paste the redirected URL or authorization code: ")).trim();
+  prompt.close();
+  let code = pasted;
+  try { code = new URL(pasted).searchParams.get("code") || pasted; } catch { /* raw code */ }
+  if (!code) throw new Error("auth: authorization code is empty");
+  await exchangeCode(code);
+  console.log("Saved agent/.ebay-token.json with mode 0600.");
 }
 
-async function inbox(max: number) {
-  const task =
-    `Check the seller's Vinted inbox. Call vinted_browser read_inbox with max_threads ${max}. ` +
-    "For each thread, match it to an item in memory, draft the reply within policy.md, write the outbox payloads, " +
-    "update items/<item_id>/thread.md, then call vinted_browser type_reply with the exact reply text. Do not rebuild listings.";
-  const session = { id: await startSession({ kind: "inbox", item: "vinted", agentId: env.SELLER_ID, agentVersion: env.SELLER_VERSION, task, rubricFile: "outcome-reply.md" }) };
-  console.log(`✅ ▶️ run started ${session.id} ${CONSOLE}/sessions/${session.id}`);
-
-  let h: Hands | null = null; // browser opens on the first tool call only
-  const answered = new Set<string>();
-  const deadline = Date.now() + 45 * 60_000;
-  try {
-    while (Date.now() < deadline) {
-      const s = await api("GET", `/sessions/${session.id}`);
-      if (s.status === "terminated") { console.log("terminated"); break; }
-      if (s.status === "idle") {
-        const ev = await api("GET", `/sessions/${session.id}/events?types[]=agent.custom_tool_use&limit=100`);
-        const pending = (ev.data ?? []).filter((e: any) => !answered.has(e.id));
-        if (!pending.length) {
-          const last = (s.outcome_evaluations ?? []).at(-1);
-          console.log(`done: ${last?.result ?? "no verdict"} ${(last?.explanation ?? "").slice(0, 400)}`);
-          console.log(`fetched ${(await fetchOutputs(session.id)).length} output files into runs/${session.id}/`);
-          break;
-        }
-        h ??= await openBrowser();
-        for (const e of pending) {
-          console.log(`🛠️ vinted_browser ${e.input?.action}`);
-          const result = await runTool(h, e.input ?? {});
-          await api("POST", `/sessions/${session.id}/events`, {
-            events: [{ type: "user.custom_tool_result", custom_tool_use_id: e.id, content: [{ type: "text", text: JSON.stringify(result) }] }],
-          });
-          answered.add(e.id);
-        }
-      }
-      await sleep(5000);
-    }
-  } finally {
-    if (h) {
-      await h.stagehand.close(); // leave Chrome open so the typed drafts stay visible
-      console.log("Chrome stays open with the typed drafts. Review, press Send yourself, then Ctrl-C here.");
-    }
-  }
+async function firstOrCreate(path: string, collection: string, idField: string, body: unknown): Promise<string> {
+  const existing = record(await rest("GET", path, { query: { marketplace_id: "EBAY_GB" } }));
+  const first = record(array(existing[collection])[0]);
+  let id = text(first[idField]);
+  if (!id) id = text(record(await rest("POST", path, { body }))[idField]);
+  if (!id) throw new Error(`ebay: ${path} returned no ${idField}`);
+  return id;
 }
 
-const [cmd, arg] = process.argv.slice(2);
-if (cmd === "login") await login();
-else if (cmd === "inbox") await inbox(Number(arg ?? 3));
-else if (cmd === "watch") await watch();
-else { console.error("usage: npx tsx worker.ts login | inbox [max 1-5] | watch"); process.exit(2); }
+async function setup() {
+  const programs = record(await rest("GET", "/sell/account/v1/program/get_opted_in_programs"));
+  const optedIn = array(programs.programs).some((entry) => record(entry).programType === "SELLING_POLICY_MANAGEMENT");
+  if (!optedIn) await rest("POST", "/sell/account/v1/program/opt_in", { body: { programType: "SELLING_POLICY_MANAGEMENT" } });
+  const categories = [{ name: "ALL_EXCLUDING_MOTORS", default: true }];
+  const fulfillmentPolicyId = await firstOrCreate(
+    "/sell/account/v1/fulfillment_policy",
+    "fulfillmentPolicies",
+    "fulfillmentPolicyId",
+    {
+      name: "SecondLife UK tracked",
+      description: "UK tracked delivery, dispatched within two working days",
+      marketplaceId: "EBAY_GB",
+      categoryTypes: categories,
+      handlingTime: { value: 2, unit: "DAY" },
+      globalShipping: false,
+      shippingOptions: [{
+        optionType: "DOMESTIC",
+        costType: "FLAT_RATE",
+        shippingServices: [{
+          sortOrder: 1,
+          shippingServiceCode: "UK_RoyalMailTracked48",
+          shippingCost: { value: "3.20", currency: "GBP" },
+        }],
+      }],
+    },
+  );
+  const paymentPolicyId = await firstOrCreate(
+    "/sell/account/v1/payment_policy",
+    "paymentPolicies",
+    "paymentPolicyId",
+    {
+      name: "SecondLife immediate payment",
+      description: "Immediate payment through eBay",
+      marketplaceId: "EBAY_GB",
+      categoryTypes: categories,
+      immediatePay: true,
+    },
+  );
+  const returnPolicyId = await firstOrCreate(
+    "/sell/account/v1/return_policy",
+    "returnPolicies",
+    "returnPolicyId",
+    {
+      name: "SecondLife 30 day returns",
+      description: "30 day returns; buyer pays return postage",
+      marketplaceId: "EBAY_GB",
+      categoryTypes: categories,
+      returnsAccepted: true,
+      returnPeriod: { value: 30, unit: "DAY" },
+      returnShippingCostPayer: "BUYER",
+      refundMethod: "MONEY_BACK",
+    },
+  );
+  if (!env.EBAY_POSTCODE) throw new Error("auth: EBAY_POSTCODE missing in agent/.env");
+  await rest("PUT", "/sell/inventory/v1/location/secondlife", {
+    body: {
+      location: { address: { postalCode: env.EBAY_POSTCODE, country: "GB" } },
+      locationTypes: ["WAREHOUSE"],
+      name: "SecondLife",
+      merchantLocationStatus: "ENABLED",
+    },
+  });
+  const path = join(AGENT_DIR, ".ebay-setup.json");
+  writeFileSync(path, JSON.stringify({ fulfillmentPolicyId, paymentPolicyId, returnPolicyId }, null, 2), { mode: 0o600 });
+  chmodSync(path, 0o600);
+  console.log(`Saved ${path} and inventory location secondlife.`);
+}
+
+async function check() {
+  await appToken();
+  const result = record(await rest("GET", "/buy/browse/v1/item_summary/search", { token: "app", query: { q: "levis 501", limit: 3 } }));
+  for (const item of array(result.itemSummaries).slice(0, 3)) console.log(text(record(item).title));
+  await userToken();
+  console.log("eBay app and user tokens OK.");
+}
+
+const [command] = process.argv.slice(2);
+if (command === "login") await login();
+else if (command === "setup") await setup();
+else if (command === "check") await check();
+else if (command === "inbox") await runInboxOnce();
+else if (command === "watch") await watch();
+else {
+  console.error("usage: npx tsx worker.ts login | setup | check | inbox | watch");
+  process.exitCode = 2;
+}

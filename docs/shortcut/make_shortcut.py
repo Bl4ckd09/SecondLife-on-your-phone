@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Build the "Sell on Vinted" iPhone Shortcut as an unsigned plist.
+"""Build the "Sell on eBay" iPhone Shortcut as an unsigned plist.
 
     python3 make_shortcut.py && shortcuts sign --mode anyone \
-        --input Sell-on-Vinted.unsigned.shortcut --output Sell-on-Vinted.shortcut
+        --input Sell-on-eBay.unsigned.shortcut --output Sell-on-eBay.shortcut
 
 The Mac address and the intake secret are import questions: Shortcuts asks for them
 when the file is installed, so the file itself holds no secret.
@@ -11,7 +11,7 @@ import plistlib
 import uuid
 from pathlib import Path
 
-OUT = Path(__file__).with_name("Sell-on-Vinted.unsigned.shortcut")
+OUT = Path(__file__).with_name("Sell-on-eBay.unsigned.shortcut")
 OBJ = "￼"  # Shortcuts' placeholder character for an inline variable
 
 
@@ -83,7 +83,7 @@ actions = [
     action("appendvariable", WFVariableName="Photos", WFInput=attachment(output(b64, "Base64 Encoded"))),
     action("repeat.each", GroupingIdentifier=loop_group, WFControlFlowMode=2),
     action("downloadurl", UUID=post_id, CustomOutputName="Intake reply",
-           WFURL=text(f"http://{OBJ}:4646/intake", [output(host_id, "Text")]),
+           WFURL=text(f"http://{OBJ}:4747/intake", [output(host_id, "Text")]),
            WFHTTPMethod="POST", WFHTTPBodyType="Form", ShowHeaders=True,
            WFHTTPHeaders=fields([("X-SecondLife-Secret", text(OBJ, [output(secret_id, "Text")]), 0)]),
            WFFormValues=fields([
@@ -94,12 +94,12 @@ actions = [
            ])),
     action("getvalueforkey", UUID=msg_id, WFGetDictionaryValueType="Value", WFDictionaryKey="message",
            WFInput=attachment(output(post_id, "Intake reply"))),
-    action("notification", WFNotificationActionTitle="Sell on Vinted",
+    action("notification", WFNotificationActionTitle="Sell on eBay",
            WFNotificationActionBody=text(OBJ, [output(msg_id, "Dictionary Value")])),
 ]
 
 workflow = {
-    "WFWorkflowName": "Sell on Vinted",
+    "WFWorkflowName": "Sell on eBay",
     "WFWorkflowClientVersion": "2605.0.5",
     "WFWorkflowMinimumClientVersion": 900,
     "WFWorkflowMinimumClientVersionString": "900",
@@ -115,7 +115,7 @@ workflow = {
          "DefaultValue": "Suns-MacBook-Pro.local",
          "Text": "Mac address: its Tailscale name (works anywhere) or Suns-MacBook-Pro.local (same Wi-Fi only)"},
         {"ActionIndex": 1, "Category": "Parameter", "ParameterKey": "WFTextActionText", "DefaultValue": "",
-         "Text": "Intake secret: run  grep INTAKE_SECRET ~/SecondLife/agent/.env  on the Mac and paste the value"},
+         "Text": "Intake secret: run  grep INTAKE_SECRET ~/SecondLife-eBay/agent/.env  on the Mac and paste the value"},
     ],
 }
 
