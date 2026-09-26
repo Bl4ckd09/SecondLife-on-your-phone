@@ -3,7 +3,7 @@ import { createServer, type ServerResponse } from "node:http";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dashboardGrokRows } from "./grok.ts";
+import { dashboardGrokData } from "./grok.ts";
 import { env } from "./lib.ts";
 
 const RUNS = join(dirname(fileURLToPath(import.meta.url)), "..", "runs");
@@ -171,19 +171,34 @@ function vintedReplies(): string {
   suggestions.sort((left, right) => right.at - left.at);
   return suggestions.slice(0, 5).map((suggestion) => suggestion.html).join("") || `<p class="muted">No suggestions yet.</p>`;
 }
+function statusCounts(rows: JsonObject[]): string {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const status = String(row.status || "unknown");
+    counts.set(status, (counts.get(status) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort(([left], [right]) => left.localeCompare(right))
+    .map(([status, count]) => `${tag(status)} × ${count}`).join(" · ") || "none";
+}
+
 async function grokSection(): Promise<string> {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return "";
   try {
-    const rows = await dashboardGrokRows();
-    const items = rows.map((row) => {
+    const data = await dashboardGrokData();
+    const items = data.items.map((row) => {
       const dossier = record(row.dossier);
       const ebay = record(row.ebay);
       const result = record(record(row.result).ebay);
       const url = typeof result.url === "string" && result.url.startsWith("https://") ? result.url : "";
       const identity = [dossier.brand, dossier.model].filter((value) => typeof value === "string" && value).join(" · ") || "Identity pending";
-      return `<article class="note"><div><strong class="mono">${esc(String(row.id ?? "").slice(0, 8))}</strong> ${tag(row.status)} · ${esc(identity)} · ${esc(money(ebay.price_gbp))}${url ? ` · <a href="${esc(url)}" target="_blank" rel="noreferrer">listing</a>` : ""}</div>${row.bot_notes ? `<div class="small">${esc(row.bot_notes)}</div>` : ""}</article>`;
+      return `<article class="note"><div><strong class="mono">${esc(String(row.id ?? "").slice(0, 8))}</strong> research ${tag(row.status)} · eBay ${tag(row.ebay_status)} · Vinted ${tag(row.vinted_status)}</div><div>${esc(identity)} · ${esc(money(ebay.price_gbp))}${url ? ` · <a href="${esc(url)}" target="_blank" rel="noreferrer">listing</a>` : ""}</div>${row.bot_notes ? `<div class="small">${esc(row.bot_notes)}</div>` : ""}</article>`;
     }).join("");
-    return `<h2>Grok path</h2>${items || `<p class="muted">No Grok items yet.</p>`}`;
+    const inbox = data.inbox.map((row) => {
+      const response = record(row.response);
+      const amount = row.kind === "offer" ? ` · ${money(row.amount_gbp)}` : "";
+      return `<article class="note"><div class="meta">${esc(row.kind)} · ${esc(row.buyer || "unknown buyer")}${amount} · ${tag(row.status)} · action ${esc(response.action || "pending")}</div><div>${esc(row.text)}</div></article>`;
+    }).join("");
+    return `<h2>Grok path</h2><div class="inbox-grid"><section><h3>eBay inbox</h3><div>${statusCounts(data.inboxStatuses)}</div></section><section><h3>Vinted messages</h3><div>${statusCounts(data.vintedStatuses)}</div></section></div><h3>Items</h3>${items || `<p class="muted">No Grok items yet.</p>`}<h3>Latest Grok eBay inbox</h3>${inbox || `<p class="muted">No Grok inbox rows yet.</p>`}`;
   } catch (error) {
     return `<h2>Grok path</h2><p class="error">Grok path unavailable: ${esc(error instanceof Error ? error.message : error)}</p>`;
   }

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { Readable } from "node:stream";
 import { z } from "zod/v4";
 import { fetchVintedNotifications, markVintedMailSeen } from "./gmail.ts";
-import { pollGrokItems } from "./grok.ts";
+import { pollGrokItems, pushGrokVintedSuggestions, syncGrokInbox, syncGrokVintedNotification } from "./grok.ts";
 import { MEM_BETA, RUNS, api, deleteFile, env, fetchOutputs, fillTemplate, notify, sleep, startSession, uploadFile } from "./lib.ts";
 import { delivered, runResearchTool, runSellerTool } from "./tools.ts";
 import { tavilySearch } from "./tavily.ts";
@@ -44,6 +44,7 @@ const ItemState = z.object({
   photos: z.array(z.string()),
   fileIds: z.array(z.string()),
   title: z.string().optional(),
+  grokRowId: z.string().optional(),
   researchSession: z.string().optional(),
   listingSession: z.string().optional(),
   listingId: z.string().optional(),
@@ -71,6 +72,22 @@ function record(value: unknown): Record<string, unknown> {
 function array(value: unknown): unknown[] {
   if (value === undefined || value === null) return [];
   return Array.isArray(value) ? value : [value];
+}
+function claudeInbox(value: unknown): Record<string, unknown> {
+  const inbox = record(value);
+  const questions = array(inbox.questions).map(record);
+  const offers = array(inbox.offers).map(record);
+  for (const question of questions.filter((entry) => String(entry.item_id ?? "").startsWith("grok-"))) {
+    delivered.delete(String(question.message_id ?? ""));
+  }
+  for (const offer of offers.filter((entry) => String(entry.item_id ?? "").startsWith("grok-"))) {
+    delivered.delete(String(offer.offer_id ?? ""));
+  }
+  return {
+    ...inbox,
+    questions: questions.filter((entry) => !String(entry.item_id ?? "").startsWith("grok-")),
+    offers: offers.filter((entry) => !String(entry.item_id ?? "").startsWith("grok-")),
+  };
 }
 
 function load(item: string): ItemState {
@@ -207,8 +224,9 @@ export async function dispatchTool(scope: ToolScope, name: unknown, input: unkno
     return { error: "policy", detail: `listing sessions may only publish item ${scope.item}` };
   }
   if (scope.kind === "inbox") {
-    if (record(input).action !== "publish_listing") return runSellerTool(input);
-    return { error: "policy", detail: "inbox sessions may not publish listings" };
+    if (record(input).action === "publish_listing") return { error: "policy", detail: "inbox sessions may not publish listings" };
+    const result = await runSellerTool(input);
+    return record(input).action === "get_inbox" ? claudeInbox(result) : result;
   }
   const detail = scope.kind === "none"
     ? "this session may not use custom tools"
@@ -390,7 +408,7 @@ async function stepVinted(item: string) {
     const priceNote = hint ? `Vinted suggests £${hint.bargain ?? "?"}-£${hint.premium ?? "?"} (optimal £${hint.optimal ?? "?"})${outside ? ", so review the price" : ""}.` : "";
     const check = skipped.length ? `Check: ${skipped.join(", ")}.` : "";
     console.log(`${state.item}: Vinted draft saved at £${price}. ${priceNote} ${check}`.trim());
-    await notify(`Vinted draft ready: ${text(vinted.listing?.title, 80)} £${price}`, `${priceNote} ${check} Open Vinted ▸ Drafts.`.trim());
+    if (!state.grokRowId) await notify(`Vinted draft ready: ${text(vinted.listing?.title, 80)} £${price}`, `${priceNote} ${check} Open Vinted ▸ Drafts.`.trim());
   }
 }
 
@@ -490,7 +508,7 @@ async function finishInbox(session: string) {
 
 
 async function startInboxSession(): Promise<string | null> {
-  const preview = record(await runSellerTool({ action: "get_inbox" }));
+  const preview = claudeInbox(await runSellerTool({ action: "get_inbox" }));
   if (preview.error) throw new Error(`${preview.error}: ${preview.detail}`);
   if (!array(preview.questions).length && !array(preview.offers).length) return null;
   const session = await startSession({
@@ -519,6 +537,7 @@ async function pollInbox() {
     return;
   }
   if (Date.now() < nextInboxAt || !liveItems().length) return;
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) await syncGrokInbox();
   inboxSession = await startInboxSession();
   if (!inboxSession) nextInboxAt = Date.now() + INBOX_MS;
 }
@@ -528,8 +547,14 @@ let nextGrokAt = 0;
 async function pollVintedMail() {
   if (!env.VINTED_EMAIL || !env.VINTED_EMAIL_APP_PASSWORD || Date.now() < nextVintedMailAt) return;
   nextVintedMailAt = Date.now() + VINTED_MAIL_MS;
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    try { await pushGrokVintedSuggestions(); } catch (error) {
+      console.error(`grok Vinted suggestions: ${error instanceof Error ? error.message : error}`);
+    }
+  }
   for (const notification of await fetchVintedNotifications()) {
     try {
+      if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) await syncGrokVintedNotification(notification);
       await suggestVintedReply(notification);
       markVintedMailSeen(notification.uid);
     } catch (error) {
