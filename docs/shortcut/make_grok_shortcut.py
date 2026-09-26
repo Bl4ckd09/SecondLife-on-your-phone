@@ -97,7 +97,7 @@ actions = [
                ("size", text(OBJ, [output(size_id, "Provided Input")]), 0),
                ("condition", text(OBJ, [output(condition_id, "Chosen Item")]), 0),
                ("flaws", text(OBJ, [output(flaws_id, "Provided Input")]), 0),
-               ("photo_paths", text(OBJ, [var("Photo Paths")]), 2),
+               ("photo_list", text(OBJ, [var("Photo Paths")]), 0),
                ("status", text("new"), 0),
            ])),
     action("notification", WFNotificationActionTitle="Sell with Grok",
