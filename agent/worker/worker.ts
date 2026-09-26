@@ -43,7 +43,7 @@ async function setup() {
   const programs = record(await rest("GET", "/sell/account/v1/program/get_opted_in_programs"));
   const optedIn = array(programs.programs).some((entry) => record(entry).programType === "SELLING_POLICY_MANAGEMENT");
   if (!optedIn) await rest("POST", "/sell/account/v1/program/opt_in", { body: { programType: "SELLING_POLICY_MANAGEMENT" } });
-  const categories = [{ name: "ALL_EXCLUDING_MOTORS", default: true }];
+  const categories = [{ name: "ALL_EXCLUDING_MOTORS_VEHICLES", default: true }];
   const fulfillmentPolicyId = await firstOrCreate(
     "/sell/account/v1/fulfillment_policy",
     "fulfillmentPolicies",
@@ -60,7 +60,7 @@ async function setup() {
         costType: "FLAT_RATE",
         shippingServices: [{
           sortOrder: 1,
-          shippingServiceCode: "UK_RoyalMailTracked48",
+          shippingServiceCode: "UK_RoyalMailTracked",
           shippingCost: { value: "3.20", currency: "GBP" },
         }],
       }],
@@ -94,14 +94,19 @@ async function setup() {
     },
   );
   if (!env.EBAY_POSTCODE) throw new Error("auth: EBAY_POSTCODE missing in agent/.env");
-  await rest("PUT", "/sell/inventory/v1/location/secondlife", {
-    body: {
-      location: { address: { postalCode: env.EBAY_POSTCODE, country: "GB" } },
-      locationTypes: ["WAREHOUSE"],
-      name: "SecondLife",
-      merchantLocationStatus: "ENABLED",
-    },
-  });
+  const locationPath = "/sell/inventory/v1/location/secondlife";
+  const location = {
+    location: { address: { postalCode: env.EBAY_POSTCODE, country: "GB" } },
+    locationTypes: ["WAREHOUSE"],
+    name: "SecondLife",
+    merchantLocationStatus: "ENABLED",
+  };
+  try {
+    await rest("GET", locationPath);
+  } catch (error) {
+    if (!(error instanceof Error) || !/^ebay: HTTP 404(?: |$)/.test(error.message)) throw error;
+    await rest("POST", locationPath, { body: location });
+  }
   const path = join(AGENT_DIR, ".ebay-setup.json");
   writeFileSync(path, JSON.stringify({ fulfillmentPolicyId, paymentPolicyId, returnPolicyId }, null, 2), { mode: 0o600 });
   chmodSync(path, 0o600);
